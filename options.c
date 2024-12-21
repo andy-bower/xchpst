@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/types.h>
 
 #include "options.h"
 
@@ -20,18 +21,20 @@ const struct option_info options_info[] = {
   { C_R, OPT_VERSION,     'V',  "version",     no_argument,       "show " NAME_STR " version" },
   { C_R, OPT_VERBOSE,     'v',  "verbose",     no_argument,       "be verbose" },
   { C_X, OPT_HELP,        'h',  "help",        no_argument,       "show help" },
-  { C_0, OPT_SETUIDGID,   'u',  nullptr,       required_argument,
+  { C_R, OPT_SETUIDGID,   'u',  nullptr,       required_argument,
     "set uid, gid and supplementary groups", "[:]USER[:GROUP]*", },
   { C_R, OPT_ARGV0,       'b',  nullptr,       required_argument,
     "launch program with ARGV0 as the argv[0]", "ARGV0" },
   { C_X, OPT_MOUNT_NS,    '\0', "mount-ns",    no_argument,       "create mount namespace" },
   { C_X, OPT_NET_NS,      '\0', "net-ns",      no_argument,       "create net namespace" },
+  { C_X, OPT_USER_NS,     '\0', "user-ns",     no_argument,       "create user namespace" },
   { 0  , OPT_PID_NS,      '\0', "pid-ns",      no_argument,       "create pid namespace" },
   { C_X, OPT_NET_ADOPT,   '\0', "adopt-net",   required_argument,
     "adopt net namespace", "NS-PATH" },
   { C_X, OPT_PRIVATE_RUN, '\0', "private-run", no_argument,       "create private run dir" },
   { C_X, OPT_PRIVATE_TMP, '\0', "private-tmp", no_argument,       "create private tmp dir" },
   { C_X, OPT_RO_SYS,      '\0', "ro-sys",      no_argument,       "create read only system" },
+  { C_X, OPT_LEGACY,      '@',  nullptr,       no_argument,       "only legacy compat options follow" },
 };
 constexpr size_t max_options = sizeof options_info / (sizeof *options_info);
 
@@ -119,6 +122,7 @@ void options_init(void) {
 
 int options_parse(int argc, char *argv[]) {
   const struct option_info *optdef;
+  enum compat_level compat = opt.app->compat_level;
   int c;
 
   while ((c = opt.app->long_opts ?
@@ -134,8 +138,16 @@ int options_parse(int argc, char *argv[]) {
     /* Handle option */
     if (optdef - options_info == max_options) {
         opt.error = true;
+    } else if ((optdef->compat_level & compat) == 0) {
+        char short_name[2] = { optdef->short_name, 0};
+        fprintf(stderr, "illegal option (%s) at this compat level\n",
+                optdef->long_name ? optdef->long_name : short_name);
+        opt.error = true;
     } else {
-      switch (optdef->option) {
+     switch (optdef->option) {
+      case OPT_LEGACY:
+        compat = COMPAT_CHPST;
+        break;
       case OPT_VERSION:
         opt.version = true;
         break;
@@ -157,6 +169,9 @@ int options_parse(int argc, char *argv[]) {
       case OPT_PID_NS:
         opt.new_ns |= CLONE_NEWPID;
         break;
+      case OPT_USER_NS:
+        opt.new_ns |= CLONE_NEWUSER;
+        break;
       case OPT_NET_ADOPT:
         opt.net_adopt = optarg;
         break;
@@ -170,6 +185,14 @@ int options_parse(int argc, char *argv[]) {
         opt.ro_sys = true;
         break;
       case OPT_SETUIDGID:
+        if (usrgrp_parse(&opt.users_groups, optarg))
+          opt.error = true;
+        else if (usrgrp_resolve(&opt.users_groups))
+          opt.error = true;
+        if (opt.verbosity > 1)
+          usrgrp_print(stderr, &opt.users_groups);
+        opt.setuidgid = true;
+        break;
       case OPT_ENVUIDGID:
         fprintf(stderr, "-%c%s not yet implemented\n",
                         optdef->long_name ? '-' : optdef->short_name,
@@ -184,5 +207,5 @@ int options_parse(int argc, char *argv[]) {
 void options_free(void) {
   if (optstr)
     free(optstr);
-  optstr = nullptr;
+  usrgrp_free(&opt.users_groups);
 }

@@ -20,7 +20,7 @@ LN = ln -f
 DEP = $(wildcard *.d)
 prefix ?= /usr
 
-OBJS = xchpst.o options.o
+OBJS = xchpst.o options.o usrgrp.o
 
 .PHONY: all clean install
 
@@ -37,5 +37,6 @@ clean:
 	$(RM) $(name) $(OBJS) $(DEP)
 
 install:
-	$(INSTALL) -m 755 -D -t $(DESTDIR)$(prefix)/bin            $(name)
-#	$(INSTALL) -m 644 -D -t $(DESTDIR)$(prefix)/share/man/man1 $(name).1
+	$(INSTALL) -m 755 -D -t $(DESTDIR)$(prefix)/bin               $(name)
+	$(INSTALL) -m 644 -D -t $(DESTDIR)$(prefix)/share/doc/$(name) xchpst-funcs.sh
+#	$(INSTALL) -m 644 -D -t $(DESTDIR)$(prefix)/share/man/man1    $(name).1

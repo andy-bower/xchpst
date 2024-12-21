@@ -15,6 +15,7 @@
 #include <unistd.h>
 
 #include "xchpst.h"
+#include "usrgrp.h"
 
 enum compat_level {
   COMPAT_CHPST  = 01,
@@ -46,10 +47,12 @@ enum opt:int {
   OPT_MOUNT_NS,
   OPT_NET_NS,
   OPT_PID_NS,
+  OPT_USER_NS,
   OPT_NET_ADOPT,
   OPT_PRIVATE_RUN,
   OPT_PRIVATE_TMP,
   OPT_RO_SYS,
+  OPT_LEGACY,
 };
 
 #define NAME_STR STRINGIFY(PROG_NAME)
@@ -77,7 +80,9 @@ struct options {
   bool private_run;
   bool private_tmp;
   bool ro_sys;
+  bool setuidgid;
   const char *net_adopt;
+  struct users_groups users_groups;
 };
 
 extern struct options opt;

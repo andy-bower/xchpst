@@ -10,15 +10,19 @@
 #include <ctype.h>
 #include <fcntl.h>
 #include <getopt.h>
+#include <grp.h>
 #include <errno.h>
 #include <sched.h>
+#include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <linux/prctl.h>
 #include <sys/mount.h>
 #include <sys/stat.h>
+#include <sys/prctl.h>
 
 #include "xchpst.h"
 #include "options.h"
@@ -106,6 +110,37 @@ static int remount_sys(void) {
          ((rc = remount("/boot")) && rc != ENOENT)) ? -1 : 0;
 }
 
+static int write_once(const char *file, const char *fmt, ...) {
+  int fd = open(file, O_WRONLY);
+  char *text;
+  size_t len;
+  int rc = 0;
+  va_list args;
+
+  if ((rc = fd == -1 ? 1 : 0))
+    goto fail0;
+
+  va_start(args);
+  len = vasprintf(&text, fmt, args);
+  va_end(args);
+  if (text == nullptr || len == -1) {
+    rc = -1;
+    goto fail;
+  }
+
+  rc = write(fd, text, len);
+  rc = (rc == len ? 0 : -1);
+
+  free(text);
+
+fail:
+  close(fd);
+fail0:
+  if (rc != 0)
+    fprintf(stderr, "writing to %s: %s\n", file, strerror(errno));
+  return rc;
+}
+
 int main(int argc, char *argv[]) {
   char **sub_argv;
   char *executable;
@@ -113,7 +148,10 @@ int main(int argc, char *argv[]) {
   int optind;
   int rc = 0;
   int ret = CHPST_ERROR_CHANGING_STATE;
+  uid_t uid;
+  gid_t gid;
   int fd;
+  int i;
 
   /* As which application were we invoked? */
   for (opt.app = apps;
@@ -131,7 +169,8 @@ int main(int argc, char *argv[]) {
 
   if (!(opt.new_ns & CLONE_NEWNS) &&
       (opt.new_ns || opt.private_run || opt.private_tmp || opt.ro_sys)) {
-    fprintf(stderr, "also creating mount namespace implicitly due to other options\n");
+    if (is_verbose())
+      fprintf(stderr, "also creating mount namespace implicitly due to other options\n");
     opt.new_ns |= CLONE_NEWNS;
   }
 
@@ -162,6 +201,45 @@ int main(int argc, char *argv[]) {
   if (opt.argv0)
     sub_argv[0] = opt.argv0;
 
+  if (opt.setuidgid && opt.users_groups.user.resolved) {
+    /* You do this backwards: supplemental groups first */
+    gid_t *groups = malloc(sizeof(gid_t) * opt.users_groups.num_supplemental);
+    gid_t gid;
+    uid_t uid;
+
+    /* We need to make sure we don't lose capabilities prematurely when
+     * dropping user */
+    rc = prctl(PR_SET_KEEPCAPS, 1);
+
+    if (!groups) goto finish;
+    for (i = 0; i < opt.users_groups.num_supplemental; i++)
+      groups[i] = opt.users_groups.supplemental[i].gid;
+    rc = (setgroups(i, groups) == -1 ? errno : 0);
+    free(groups);
+    if (rc) {
+      perror("setgroups");
+      goto finish;
+    }
+
+    /* Then main group */
+    gid = opt.users_groups.group.gid;
+    rc = setresgid(gid, gid, gid);
+    if (rc) {
+      perror("setresgid");
+      goto finish;
+    }
+
+    /* Then the actual user */
+    uid = opt.users_groups.user.uid;
+    rc = setresuid(uid, uid, uid);
+    if (rc) {
+      perror("setresgid");
+      goto finish;
+    }
+  }
+  uid = getuid();
+  gid = getgid();
+
   if (opt.new_ns) {
     rc = unshare(opt.new_ns);
     if (rc == -1) {
@@ -181,6 +259,14 @@ int main(int argc, char *argv[]) {
       special_mount("/sys", "sysfs", "sysfs", nullptr);
     if (opt.new_ns & CLONE_NEWPID)
       special_mount("/proc", "proc", "procfs", nullptr);
+    if (opt.new_ns & CLONE_NEWUSER) {
+      setgroups(0, nullptr);
+      write_once("/proc/self/setgroups", "%s", "deny");
+      write_once("/proc/self/gid_map", "%u %u %u", 0, gid, 1);
+      write_once("/proc/self/uid_map", "%u %u %u", 0, uid, 1);
+      setresgid(0, 0, 0);
+      setresuid(0, 0, 0);
+    }
   }
 
   if (opt.net_adopt) {
