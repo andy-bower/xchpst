@@ -1,0 +1,230 @@
+/* SPDX-License-Identifier: MIT */
+/* SPDX-FileCopyrightText: (c) Copyright 2024 Andrew Bower <andrew@bower.uk> */
+
+/* xchpst: eXtended Change Process State
+ * A tool that is backwards compatible with chpst(8) from runit(8),
+ * offering additional options to harden process with namespace isolation
+ * and more. */
+
+#include <assert.h>
+#include <ctype.h>
+#include <fcntl.h>
+#include <getopt.h>
+#include <errno.h>
+#include <sched.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/mount.h>
+#include <sys/stat.h>
+
+#include "xchpst.h"
+#include "options.h"
+
+enum chpst_exit {
+  CHPST_ERROR_OPTIONS = 100,
+  CHPST_ERROR_CHANGING_STATE = 111,
+
+  /* chpst(8) returns 100 for no-ops like -v; do likewise */
+  CHPST_OK = CHPST_ERROR_OPTIONS,
+};
+
+static const char *version_str = STRINGIFY(PROG_VERSION);
+
+const struct app apps[] = {
+  { COMPAT_CHPST,  "chpst",  .long_opts = false },
+  { COMPAT_XCHPST, "xchpst", .long_opts = true },
+};
+constexpr size_t max_apps = sizeof apps / (sizeof *apps);
+
+static void version(FILE *out) {
+  fprintf(out,
+          "xchpst-%s (c) Copyright 2024, Andrew Bower <andrew@bower.uk>\n",
+          version_str);
+}
+
+static void usage(FILE *out) {
+  version(out);
+  fprintf(out,
+          "\nusage: %s OPTIONS [--] PROG...    launch PROG with changed process state\n",
+          program_invocation_short_name);
+  options_print(out);
+}
+
+static int special_mount(char *path, char *fs, char *desc, char *options) {
+  int rc;
+
+  rc = mkdirat(AT_FDCWD, path, 0777);
+  if (rc == 0 || errno == EEXIST) {
+    umount2(path, MNT_DETACH);
+    rc = mount(nullptr, path, fs,
+               MS_NODEV | MS_NOEXEC | MS_NOSUID, options);
+  }
+  if (rc == -1)
+    fprintf(stderr, "in creating %s mount: %s, %s\n", desc, path, strerror(errno));
+  return rc;
+}
+
+static int private_mount(char *path) {
+  return special_mount(path, "tmpfs", "private", "mode=0755");
+}
+
+static int remount(const char *path) {
+  struct stat statbuf;
+  int rc;
+
+  if ((rc = stat(path, &statbuf)) == -1 && errno == ENOENT)
+    return ENOENT;
+
+  /* Try remount first, in case we don't need a bind mount. */
+  rc = mount(path, path, nullptr,
+             MS_REMOUNT | MS_BIND | MS_REC | MS_RDONLY, nullptr);
+  if (rc == -1) {
+    /* we hope errno == EINVAL but no need to check as will find out later */
+    rc = mount(path, path, nullptr,
+               MS_REC | MS_BIND | MS_SLAVE, nullptr);
+    if (rc == -1)
+      fprintf(stderr, "recursive bind mounting %s: %s", path, strerror(errno));
+
+    rc = mount(path, path, nullptr,
+               MS_REMOUNT | MS_REC | MS_BIND | MS_RDONLY, nullptr);
+    if (rc == -1)
+      fprintf(stderr, "remounting %s read-only: %s", path, strerror(errno));
+  } else if (opt.verbosity > 0) {
+    fprintf(stderr, "could go straight to remount for %s\n", path);
+  }
+  return rc ? -1 : 0;
+}
+
+static int remount_sys(void) {
+  int rc;
+
+  return (((rc = remount("/usr")) && rc != ENOENT) ||
+         ((rc = remount("/boot/efi")) && rc != ENOENT) ||
+         ((rc = remount("/boot")) && rc != ENOENT)) ? -1 : 0;
+}
+
+int main(int argc, char *argv[]) {
+  char **sub_argv;
+  char *executable;
+  int sub_argc;
+  int optind;
+  int rc = 0;
+  int ret = CHPST_ERROR_CHANGING_STATE;
+  int fd;
+
+  /* As which application were we invoked? */
+  for (opt.app = apps;
+       opt.app - apps < max_apps && strcmp(program_invocation_short_name, opt.app->name);
+       opt.app++);
+
+  options_init();
+  optind = options_parse(argc, argv);
+
+  if (is_verbose())
+    fprintf(stderr, "invoked as %s(%s)\n", opt.app->name, program_invocation_short_name);
+
+  if (optind == argc)
+    opt.error = true;
+
+  if (!(opt.new_ns & CLONE_NEWNS) &&
+      (opt.new_ns || opt.private_run || opt.private_tmp || opt.ro_sys)) {
+    fprintf(stderr, "also creating mount namespace implicitly due to other options\n");
+    opt.new_ns |= CLONE_NEWNS;
+  }
+
+  if (opt.error) {
+    usage(stderr);
+    ret = CHPST_ERROR_OPTIONS;
+    goto finish0;
+  }
+
+  if (opt.help)
+    usage(stdout);
+  else if (opt.version)
+    version(stdout);
+
+  if (opt.help || opt.version) {
+    ret = CHPST_OK;
+    goto finish0;
+  }
+
+  /* Do xchpsty-type things now! */
+  sub_argc = argc - optind;
+  sub_argv = malloc((sub_argc + 1) * sizeof *sub_argv);
+  memcpy(sub_argv, argv + optind, sub_argc * sizeof *sub_argv);
+  sub_argv[sub_argc] = nullptr;
+
+  executable = argv[optind];
+
+  if (opt.argv0)
+    sub_argv[0] = opt.argv0;
+
+  if (opt.new_ns) {
+    rc = unshare(opt.new_ns);
+    if (rc == -1) {
+      perror(NAME_STR ": unshare()");
+      goto finish;
+    }
+    if (opt.verbosity > 0) fprintf(stderr, "created 0xb%b namespaces\n", opt.new_ns);
+
+    if (opt.new_ns & CLONE_NEWNS) {
+      rc = mount(nullptr, "/", nullptr,
+                 MS_REC | MS_SLAVE, nullptr);
+      if (rc == -1)
+        fprintf(stderr, "recursive remounting / as MS_SLAVE: %s", strerror(errno));
+    }
+
+    if (opt.new_ns & CLONE_NEWNET)
+      special_mount("/sys", "sysfs", "sysfs", nullptr);
+    if (opt.new_ns & CLONE_NEWPID)
+      special_mount("/proc", "proc", "procfs", nullptr);
+  }
+
+  if (opt.net_adopt) {
+    const char *failed_op = nullptr;
+    if ((fd = open(opt.net_adopt, O_RDONLY)) != -1) {
+      if ((rc = setns(fd, CLONE_NEWNET)) == 0) {
+        if ((rc = umount2(opt.net_adopt, MNT_DETACH)) == 0) {
+          if ((rc = unlink(opt.net_adopt)) == -1)
+            failed_op = "unlink";
+        } else failed_op = "umount2";
+      } else {
+        failed_op = "setns"; close(fd);
+      }
+    } else failed_op = "open";
+    if (failed_op) {
+      perror(failed_op);
+      goto finish;
+    }
+    if (opt.verbosity > 0) fprintf(stderr, "adopted net ns\n");
+  }
+
+  if (opt.private_run)
+    private_mount("/run");
+
+  if (opt.private_tmp) {
+    private_mount("/tmp");
+    private_mount("/var/tmp");
+  }
+
+  if (opt.ro_sys) {
+    remount_sys();
+  }
+
+  /* Launch the target */
+  rc = execvp(executable, sub_argv);
+
+  /* Handle errors launching */
+  assert(rc == -1);
+  perror(NAME_STR ": execvp");
+
+finish:
+  free(sub_argv);
+
+finish0:
+  options_free();
+  return ret;
+}
