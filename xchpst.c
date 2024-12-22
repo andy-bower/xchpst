@@ -20,6 +20,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <linux/prctl.h>
+#include <sys/file.h>
 #include <sys/mount.h>
 #include <sys/stat.h>
 #include <sys/prctl.h>
@@ -184,6 +185,7 @@ int main(int argc, char *argv[]) {
   int optind;
   int rc = 0;
   int ret = CHPST_ERROR_CHANGING_STATE;
+  int lock_fd = -1;
   uid_t uid;
   gid_t gid;
   int fd;
@@ -233,6 +235,18 @@ int main(int argc, char *argv[]) {
   sub_argv[sub_argc] = nullptr;
 
   executable = argv[optind];
+
+  if (opt.lock_file) {
+    lock_fd = open(opt.lock_file, O_WRONLY | O_NDELAY | O_APPEND | O_CREAT, 0600);
+    if (lock_fd == -1) {
+      perror("opening lock file");
+      goto finish;
+    }
+    if (flock(lock_fd, LOCK_EX | (opt.lock_wait ? 0 : LOCK_NB)) == -1) {
+      perror("obtaining lock");
+      goto finish;
+    }
+  }
 
   if (opt.argv0)
     sub_argv[0] = opt.argv0;
@@ -346,6 +360,9 @@ int main(int argc, char *argv[]) {
   perror(NAME_STR ": execvp");
 
 finish:
+  if (lock_fd != -1)
+    close(lock_fd);
+
   free(sub_argv);
 
 finish0:

@@ -69,6 +69,8 @@ enum opt:int {
   OPT_RLIMIT_FSIZE,
   OPT_RLIMIT_CORE,
   OPT_RLIMIT_CPU,
+  OPT_LOCK,
+  OPT_LOCK_WAIT,
 };
 
 #define NAME_STR STRINGIFY(PROG_NAME)
@@ -103,6 +105,8 @@ struct options {
   bool private_tmp;
   bool ro_sys;
   bool setuidgid;
+  bool lock_wait;
+  const char *lock_file;
   const char *net_adopt;
   struct users_groups users_groups;
   struct limit rlimit_data;

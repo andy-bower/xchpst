@@ -35,6 +35,8 @@ const struct option_info options_info[] = {
     "set uid, gid and supplementary groups", "[:]USER[:GROUP]*", },
   { C_R, OPT_ARGV0,       'b',  nullptr,       required_argument,
     "launch program with ARGV0 as the argv[0]", "ARGV0" },
+  { C_R, OPT_LOCK,        'L',  nullptr,       required_argument, "obtain lock; fail fast", "FILE" },
+  { C_R, OPT_LOCK_WAIT,   'l',  nullptr,       required_argument, "wait for lock", "FILE" },
   { C_RS,OPT_LIMIT_MEM,   'm',  nullptr,       required_argument,
     "set soft DATA, STACK, MEMLOCK and AS limits", "BYTES" },
   { C_RS,OPT_RLIMIT_DATA, 'd',  nullptr,       required_argument, "set soft RLIMIT_DATA", "BYTES" },
@@ -196,6 +198,12 @@ int options_parse(int argc, char *argv[]) {
         break;
       case OPT_ARGV0:
         opt.argv0 = optarg;
+        break;
+      case OPT_LOCK_WAIT:
+        opt.lock_wait = true;
+        [[fallthrough]];
+      case OPT_LOCK:
+        opt.lock_file = optarg;
         break;
       case OPT_MOUNT_NS:
         opt.new_ns |= CLONE_NEWNS;
