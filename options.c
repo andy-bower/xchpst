@@ -18,13 +18,7 @@
 struct options opt;
 
 const struct option_info options_info[] = {
-  { C_R, OPT_VERSION,     'V',  "version",     no_argument,       "show " NAME_STR " version" },
-  { C_R, OPT_VERBOSE,     'v',  "verbose",     no_argument,       "be verbose" },
   { C_X, OPT_HELP,        'h',  "help",        no_argument,       "show help" },
-  { C_R, OPT_SETUIDGID,   'u',  nullptr,       required_argument,
-    "set uid, gid and supplementary groups", "[:]USER[:GROUP]*", },
-  { C_R, OPT_ARGV0,       'b',  nullptr,       required_argument,
-    "launch program with ARGV0 as the argv[0]", "ARGV0" },
   { C_X, OPT_MOUNT_NS,    '\0', "mount-ns",    no_argument,       "create mount namespace" },
   { C_X, OPT_NET_NS,      '\0', "net-ns",      no_argument,       "create net namespace" },
   { C_X, OPT_USER_NS,     '\0', "user-ns",     no_argument,       "create user namespace" },
@@ -35,6 +29,26 @@ const struct option_info options_info[] = {
   { C_X, OPT_PRIVATE_TMP, '\0', "private-tmp", no_argument,       "create private tmp dir" },
   { C_X, OPT_RO_SYS,      '\0', "ro-sys",      no_argument,       "create read only system" },
   { C_X, OPT_LEGACY,      '@',  nullptr,       no_argument,       "only legacy compat options follow" },
+  { C_R, OPT_VERSION,     'V',  "version",     no_argument,       "show " NAME_STR " version" },
+  { C_R, OPT_VERBOSE,     'v',  "verbose",     no_argument,       "be verbose" },
+  { C_R, OPT_SETUIDGID,   'u',  nullptr,       required_argument,
+    "set uid, gid and supplementary groups", "[:]USER[:GROUP]*", },
+  { C_R, OPT_ARGV0,       'b',  nullptr,       required_argument,
+    "launch program with ARGV0 as the argv[0]", "ARGV0" },
+  { C_RS,OPT_LIMIT_MEM,   'm',  nullptr,       required_argument,
+    "set soft DATA, STACK, MEMLOCK and AS limits", "BYTES" },
+  { C_RS,OPT_RLIMIT_DATA, 'd',  nullptr,       required_argument, "set soft RLIMIT_DATA", "BYTES" },
+  { C_RS,OPT_RLIMIT_RSS,  'r',  nullptr,       required_argument, "set soft RLIMIT_RSS", "BYTES" },
+  { C_RS,OPT_RLIMIT_NOFILE,'o', nullptr,       required_argument, "set soft RLIMIT_NOFILE", "FILES" },
+  { C_RS,OPT_RLIMIT_NPROC,'p',  nullptr,       required_argument, "set soft RLIMIT_NPROC", "PROCS" },
+  { C_RS,OPT_RLIMIT_FSIZE,'f',  nullptr,       required_argument, "set soft RLIMIT_FSIZE", "BYTES" },
+  { C_RS,OPT_RLIMIT_CORE, 'c',  nullptr,       required_argument, "set soft RLIMIT_CORE", "BYTES" },
+  { C_RS,OPT_RLIMIT_CPU,  't',  nullptr,       required_argument, "set soft RLIMIT_CPU", "SECONDS" },
+
+  /* Options only available in 'softlimit' utility */
+  { C_S, OPT_RLIMIT_MEMLOCK,'l', nullptr,      required_argument, "set soft RLIMIT_MEMLOCK", "BYTES" },
+  { C_S, OPT_RLIMIT_STACK,'s',  nullptr,       required_argument, "set soft RLIMIT_STACK", "BYTES" },
+  { C_S, OPT_RLIMIT_AS,   'a',  nullptr,       required_argument, "set soft RLIMIT_AS", "BYTES" },
 };
 constexpr size_t max_options = sizeof options_info / (sizeof *options_info);
 
@@ -120,6 +134,29 @@ void options_init(void) {
   optstr[optstr_len++] = '\0';
 }
 
+bool parse_limit(rlim_t *lim, const char *arg) {
+  int toks = 0;
+  long long val;
+
+  if (!strcmp(arg, "unlimited")) {
+    *lim = RLIM_INFINITY;
+    toks = 1;
+  } else {
+    toks = sscanf(arg, "%lld", &val);
+    if (toks == 1) {
+      if (val == -1LL) {
+        *lim = RLIM_INFINITY;
+      } else if (val >= 0LL) {
+        *lim = val;
+      } else {
+        fprintf(stderr, "invalid limit: %lld\n", val);
+        toks = 0;
+      }
+    }
+  }
+  return toks == 1 ? true : false;
+}
+
 int options_parse(int argc, char *argv[]) {
   const struct option_info *optdef;
   enum compat_level compat = opt.app->compat_level;
@@ -192,6 +229,55 @@ int options_parse(int argc, char *argv[]) {
         if (opt.verbosity > 1)
           usrgrp_print(stderr, &opt.users_groups);
         opt.setuidgid = true;
+        break;
+      case OPT_LIMIT_MEM:
+        if (!(opt.rlimit_memlock.soft_specified = parse_limit(&opt.rlimit_memlock.limits.rlim_cur, optarg))) {
+          opt.error = true;
+        } else {
+          opt.rlimit_data = opt.rlimit_memlock;
+          opt.rlimit_stack = opt.rlimit_memlock;
+          opt.rlimit_as = opt.rlimit_as;
+        }
+        break;
+       case OPT_RLIMIT_DATA:
+        if (!(opt.rlimit_data.soft_specified = parse_limit(&opt.rlimit_data.limits.rlim_cur, optarg)))
+          opt.error = true;
+        break;
+      case OPT_RLIMIT_MEMLOCK:
+        if (!(opt.rlimit_memlock.soft_specified = parse_limit(&opt.rlimit_memlock.limits.rlim_cur, optarg)))
+          opt.error = true;
+        break;
+      case OPT_RLIMIT_AS:
+        if (!(opt.rlimit_as.soft_specified = parse_limit(&opt.rlimit_as.limits.rlim_cur, optarg)))
+          opt.error = true;
+        break;
+      case OPT_RLIMIT_STACK:
+        if (!(opt.rlimit_stack.soft_specified = parse_limit(&opt.rlimit_stack.limits.rlim_cur, optarg)))
+          opt.error = true;
+        break;
+      case OPT_RLIMIT_NOFILE:
+        if (!(opt.rlimit_nofile.soft_specified = parse_limit(&opt.rlimit_nofile.limits.rlim_cur, optarg)))
+          opt.error = true;
+        break;
+      case OPT_RLIMIT_RSS:
+        if (!(opt.rlimit_rss.soft_specified = parse_limit(&opt.rlimit_rss.limits.rlim_cur, optarg)))
+          opt.error = true;
+        break;
+      case OPT_RLIMIT_NPROC:
+        if (!(opt.rlimit_nproc.soft_specified = parse_limit(&opt.rlimit_nproc.limits.rlim_cur, optarg)))
+          opt.error = true;
+        break;
+      case OPT_RLIMIT_FSIZE:
+       if (!(opt.rlimit_fsize.soft_specified = parse_limit(&opt.rlimit_fsize.limits.rlim_cur, optarg)))
+          opt.error = true;
+        break;
+      case OPT_RLIMIT_CPU:
+       if (!(opt.rlimit_cpu.soft_specified = parse_limit(&opt.rlimit_cpu.limits.rlim_cur, optarg)))
+          opt.error = true;
+        break;
+      case OPT_RLIMIT_CORE:
+       if (!(opt.rlimit_core.soft_specified = parse_limit(&opt.rlimit_core.limits.rlim_cur, optarg)))
+          opt.error = true;
         break;
       case OPT_ENVUIDGID:
         fprintf(stderr, "-%c%s not yet implemented\n",

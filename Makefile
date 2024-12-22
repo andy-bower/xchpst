@@ -21,16 +21,17 @@ DEP = $(wildcard *.d)
 prefix ?= /usr
 
 OBJS = xchpst.o options.o usrgrp.o
+ALT_EXES = chpst softlimit
 
 .PHONY: all clean install
 
-all: $(name) chpst
+all: $(name) $(ALT_EXES)
 
 -include $(DEP)
 
 $(name): $(OBJS)
 
-chpst: $(name)
+$(ALT_EXES): $(name)
 	$(LN) $< $@
 
 clean:

@@ -38,8 +38,9 @@ enum chpst_exit {
 static const char *version_str = STRINGIFY(PROG_VERSION);
 
 const struct app apps[] = {
-  { COMPAT_CHPST,  "chpst",  .long_opts = false },
-  { COMPAT_XCHPST, "xchpst", .long_opts = true },
+  { COMPAT_CHPST,     "chpst",     .long_opts = false },
+  { COMPAT_XCHPST,    "xchpst",    .long_opts = true },
+  { COMPAT_SOFTLIMIT, "softlimit", .long_opts = false },
 };
 constexpr size_t max_apps = sizeof apps / (sizeof *apps);
 
@@ -139,6 +140,41 @@ fail0:
   if (rc != 0)
     fprintf(stderr, "writing to %s: %s\n", file, strerror(errno));
   return rc;
+}
+
+void set_rlimit(int resource, struct limit *option) {
+  struct rlimit prev;
+
+  if (option->soft_specified) {
+    if (getrlimit(resource, &prev) == 0) {
+      if (option->limits.rlim_cur != RLIM_INFINITY &&
+          option->limits.rlim_cur > prev.rlim_max) {
+        fprintf(stderr, "warning capping requested %d soft limit from %lld to maximum %lld\n",
+                resource, (long long) option->limits.rlim_cur, (long long) prev.rlim_max);
+        prev.rlim_cur = prev.rlim_max;
+      } else {
+        prev.rlim_cur = option->limits.rlim_cur;
+      }
+      if (setrlimit(resource, &prev) != 0) {
+        fprintf(stderr, "warning: failed to set %d soft limit\n", resource);
+      }
+    } else {
+      fprintf(stderr, "warning: resource type %d cannot be controlled on this kernel\n", resource);
+    }
+  }
+}
+
+void set_resource_limits(void) {
+  set_rlimit(RLIMIT_DATA, &opt.rlimit_data);
+  set_rlimit(RLIMIT_AS, &opt.rlimit_as);
+  set_rlimit(RLIMIT_STACK, &opt.rlimit_stack);
+  set_rlimit(RLIMIT_MEMLOCK, &opt.rlimit_memlock);
+  set_rlimit(RLIMIT_RSS, &opt.rlimit_rss);
+  set_rlimit(RLIMIT_NOFILE, &opt.rlimit_nofile);
+  set_rlimit(RLIMIT_NPROC, &opt.rlimit_nproc);
+  set_rlimit(RLIMIT_FSIZE, &opt.rlimit_fsize);
+  set_rlimit(RLIMIT_CORE, &opt.rlimit_core);
+  set_rlimit(RLIMIT_CPU, &opt.rlimit_cpu);
 }
 
 int main(int argc, char *argv[]) {
@@ -299,6 +335,8 @@ int main(int argc, char *argv[]) {
   if (opt.ro_sys) {
     remount_sys();
   }
+
+  set_resource_limits();
 
   /* Launch the target */
   rc = execvp(executable, sub_argv);
