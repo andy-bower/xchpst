@@ -73,7 +73,8 @@ enum opt:int {
   OPT_RLIMIT_CPU,
   OPT_LOCK,
   OPT_LOCK_WAIT,
-  OPT_CAP_BOUNDS,
+  OPT_CAPBS_KEEP,
+  OPT_CAPBS_DROP,
 };
 
 #define NAME_STR STRINGIFY(PROG_NAME)
@@ -95,6 +96,12 @@ struct limit {
 };
 
 typedef uint64_t cap_bits_t;
+
+enum cap_op {
+  CAP_OP_NONE = 0,
+  CAP_OP_KEEP,
+  CAP_OP_DROP,
+};
 
 struct options {
   const struct app *app;
@@ -124,7 +131,7 @@ struct options {
   struct limit rlimit_fsize;
   struct limit rlimit_core;
   struct limit rlimit_cpu;
-  bool drop_cap_bounds;
+  enum cap_op cap_op;
   cap_bits_t cap_bounds;
 };
 

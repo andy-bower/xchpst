@@ -251,7 +251,7 @@ int main(int argc, char *argv[]) {
   if (opt.argv0)
     sub_argv[0] = opt.argv0;
 
-  if (opt.drop_cap_bounds) {
+  if (opt.cap_op == CAP_OP_KEEP) {
     int i, max = cap_max_bits();
     cap_bits_t b = 1ull << (max - 1);
     for (i = max - 1; b; i--, b >>= 1) {
@@ -266,6 +266,20 @@ int main(int argc, char *argv[]) {
         }
       } else if (is_debug()) {
         fprintf(stderr, "keeping capability %s\n", cap_to_name(i));
+      }
+    }
+  } else if (opt.cap_op == CAP_OP_DROP) {
+    int i, max = cap_max_bits();
+    cap_bits_t b = 1ull << (max - 1);
+    for (i = max - 1; b; i--, b >>= 1) {
+      if (opt.cap_bounds & b) {
+        if (is_verbose())
+          fprintf(stderr, "dropping capability %s\n", cap_to_name(i));
+        rc = cap_drop_bound(i);
+        if (rc == -1) {
+          perror("cap_drop_bound");
+          goto finish;
+        }
       }
     }
   }

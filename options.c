@@ -28,8 +28,10 @@ const struct option_info options_info[] = {
   { C_X, OPT_PRIVATE_RUN, '\0', "private-run", no_argument,       "create private run dir" },
   { C_X, OPT_PRIVATE_TMP, '\0', "private-tmp", no_argument,       "create private tmp dir" },
   { C_X, OPT_RO_SYS,      '\0', "ro-sys",      no_argument,       "create read only system" },
-  { C_X, OPT_CAP_BOUNDS,  '\0', "cap-bounds",  required_argument,
+  { C_X, OPT_CAPBS_KEEP,  '\0', "caps-keep",   required_argument,
     "restrict capabilities bounding set", "CAP[,...]" },
+  { C_X, OPT_CAPBS_DROP,  '\0', "caps-drop",   required_argument,
+    "drop from capabilities bounding set", "CAP[,...]" },
   { C_X, OPT_LEGACY,      '@',  nullptr,       no_argument,       "only legacy compat options follow" },
   { C_R, OPT_VERSION,     'V',  "version",     no_argument,       "show " NAME_STR " version" },
   { C_R, OPT_VERBOSE,     'v',  "verbose",     no_argument,       "be verbose" },
@@ -162,13 +164,13 @@ bool parse_limit(rlim_t *lim, const char *arg) {
 }
 
 bool parse_caps(cap_bits_t *caps, char *names) {
-  cap_bits_t required = 0;
+  cap_bits_t set = 0;
   cap_value_t val;
   bool good = true;
   char *tok;
   int rc;
 
-  assert(8 * sizeof required > cap_max_bits());
+  assert(8 * sizeof set > cap_max_bits());
 
   while ((tok = strsep(&names, ","))) {
     rc = cap_from_name(tok, &val);
@@ -176,9 +178,9 @@ bool parse_caps(cap_bits_t *caps, char *names) {
       fprintf(stderr, "cannot interpret capability \"%s\"\n", tok);
       good = false;
     }
-    required |= (1 << val);
+    set |= (1 << val);
   }
-  *caps = required;
+  *caps = set;
   return good;
 }
 
@@ -252,10 +254,15 @@ int options_parse(int argc, char *argv[]) {
       case OPT_RO_SYS:
         opt.ro_sys = true;
         break;
-      case OPT_CAP_BOUNDS:
+      case OPT_CAPBS_KEEP:
         if (!parse_caps(&opt.cap_bounds, optarg))
           opt.error = true;
-        opt.drop_cap_bounds = true;
+        opt.cap_op = CAP_OP_KEEP;
+        break;
+      case OPT_CAPBS_DROP:
+        if (!parse_caps(&opt.cap_bounds, optarg))
+          opt.error = true;
+        opt.cap_op = CAP_OP_DROP;
         break;
       case OPT_SETUIDGID:
         if (usrgrp_parse(&opt.users_groups, optarg))
