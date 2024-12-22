@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/capability.h>
 #include <sys/resource.h>
 
 #include "xchpst.h"
@@ -27,6 +28,7 @@ enum compat_level {
 enum verbosity {
   LOG_LEVEL_NONE = 0,
   LOG_LEVEL_VERBOSE = 1,
+  LOG_LEVEL_DEBUG = 2,
 };
 
 constexpr enum compat_level C_X = COMPAT_XCHPST;
@@ -71,6 +73,7 @@ enum opt:int {
   OPT_RLIMIT_CPU,
   OPT_LOCK,
   OPT_LOCK_WAIT,
+  OPT_CAP_BOUNDS,
 };
 
 #define NAME_STR STRINGIFY(PROG_NAME)
@@ -90,6 +93,8 @@ struct limit {
   bool soft_specified:1;
   bool hard_specified:1;
 };
+
+typedef uint64_t cap_bits_t;
 
 struct options {
   const struct app *app;
@@ -119,12 +124,18 @@ struct options {
   struct limit rlimit_fsize;
   struct limit rlimit_core;
   struct limit rlimit_cpu;
+  bool drop_cap_bounds;
+  cap_bits_t cap_bounds;
 };
 
 extern struct options opt;
 
 static inline bool is_verbose(void) {
   return opt.verbosity >= LOG_LEVEL_VERBOSE;
+}
+
+static inline bool is_debug(void) {
+  return opt.verbosity >= LOG_LEVEL_DEBUG;
 }
 
 void options_init(void);

@@ -5,8 +5,7 @@ VERSION ?= 0.1.0~1
 name := xchpst
 
 prefix ?= /usr/local
-#CFLAGS ?= -g -O2
-CFLAGS ?= -g
+CFLAGS ?= -g -O2
 CFLAGS += -MMD -MP \
 	  -Wall -Wimplicit-fallthrough -Werror \
 	  -std=c23 \
@@ -14,7 +13,7 @@ CFLAGS += -MMD -MP \
 	  -DPROG_NAME=$(name) \
 	  -DPROG_VERSION=$(VERSION) \
 	  -DINST_PREFIX=$(prefix)
-LDLIBS =
+LDLIBS = -lcap
 INSTALL = install
 LN = ln -f
 DEP = $(wildcard *.d)

@@ -28,6 +28,8 @@ const struct option_info options_info[] = {
   { C_X, OPT_PRIVATE_RUN, '\0', "private-run", no_argument,       "create private run dir" },
   { C_X, OPT_PRIVATE_TMP, '\0', "private-tmp", no_argument,       "create private tmp dir" },
   { C_X, OPT_RO_SYS,      '\0', "ro-sys",      no_argument,       "create read only system" },
+  { C_X, OPT_CAP_BOUNDS,  '\0', "cap-bounds",  required_argument,
+    "restrict capabilities bounding set", "CAP[,...]" },
   { C_X, OPT_LEGACY,      '@',  nullptr,       no_argument,       "only legacy compat options follow" },
   { C_R, OPT_VERSION,     'V',  "version",     no_argument,       "show " NAME_STR " version" },
   { C_R, OPT_VERBOSE,     'v',  "verbose",     no_argument,       "be verbose" },
@@ -159,6 +161,27 @@ bool parse_limit(rlim_t *lim, const char *arg) {
   return toks == 1 ? true : false;
 }
 
+bool parse_caps(cap_bits_t *caps, char *names) {
+  cap_bits_t required = 0;
+  cap_value_t val;
+  bool good = true;
+  char *tok;
+  int rc;
+
+  assert(8 * sizeof required > cap_max_bits());
+
+  while ((tok = strsep(&names, ","))) {
+    rc = cap_from_name(tok, &val);
+    if (rc != 0) {
+      fprintf(stderr, "cannot interpret capability \"%s\"\n", tok);
+      good = false;
+    }
+    required |= (1 << val);
+  }
+  *caps = required;
+  return good;
+}
+
 int options_parse(int argc, char *argv[]) {
   const struct option_info *optdef;
   enum compat_level compat = opt.app->compat_level;
@@ -228,6 +251,11 @@ int options_parse(int argc, char *argv[]) {
         break;
       case OPT_RO_SYS:
         opt.ro_sys = true;
+        break;
+      case OPT_CAP_BOUNDS:
+        if (!parse_caps(&opt.cap_bounds, optarg))
+          opt.error = true;
+        opt.drop_cap_bounds = true;
         break;
       case OPT_SETUIDGID:
         if (usrgrp_parse(&opt.users_groups, optarg))

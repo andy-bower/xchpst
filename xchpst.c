@@ -251,15 +251,34 @@ int main(int argc, char *argv[]) {
   if (opt.argv0)
     sub_argv[0] = opt.argv0;
 
+  if (opt.drop_cap_bounds) {
+    int i, max = cap_max_bits();
+    cap_bits_t b = 1ull << (max - 1);
+    for (i = max - 1; b; i--, b >>= 1) {
+      if ((opt.cap_bounds & b) == 0 &&
+          cap_get_bound(i) == 1) {
+        if (is_verbose())
+          fprintf(stderr, "dropping capability %s\n", cap_to_name(i));
+        rc = cap_drop_bound(i);
+        if (rc == -1) {
+          perror("cap_drop_bound");
+          goto finish;
+        }
+      } else if (is_debug()) {
+        fprintf(stderr, "keeping capability %s\n", cap_to_name(i));
+      }
+    }
+  }
+
   if (opt.setuidgid && opt.users_groups.user.resolved) {
     /* You do this backwards: supplemental groups first */
     gid_t *groups = malloc(sizeof(gid_t) * opt.users_groups.num_supplemental);
     gid_t gid;
     uid_t uid;
 
-    /* We need to make sure we don't lose capabilities prematurely when
-     * dropping user */
-    rc = prctl(PR_SET_KEEPCAPS, 1);
+    /* TODO - might need to do this to retain capabilities needed to effect
+     * other changes when also dropping user. */
+    /* rc = prctl(PR_SET_KEEPCAPS, 1); */
 
     if (!groups) goto finish;
     for (i = 0; i < opt.users_groups.num_supplemental; i++)
