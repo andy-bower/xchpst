@@ -19,6 +19,8 @@ struct options opt;
 
 const struct option_info options_info[] = {
   { C_X, OPT_HELP,        'h',  "help",        no_argument,       "show help" },
+  { C_X, OPT_EXIT,        '\0', "exit",        optional_argument,
+    "exit (with optional RETCODE)", "RETCODE" },
   { C_X, OPT_MOUNT_NS,    '\0', "mount-ns",    no_argument,       "create mount namespace" },
   { C_X, OPT_NET_NS,      '\0', "net-ns",      no_argument,       "create net namespace" },
   { C_X, OPT_USER_NS,     '\0', "user-ns",     no_argument,       "create user namespace" },
@@ -67,12 +69,13 @@ void options_print(FILE *out) {
   fprintf(out, "\n OPTIONS\n");
   for (optdef = options_info; optdef - options_info < max_options; optdef++) {
     if (optdef->compat_level & opt.app->compat_level) {
-      fprintf(out, "  %c%c%s%s%s %-*s %s\n",
+      fprintf(out, "  %c%c%s%s%s%c%-*s %s\n",
              optdef->short_name ? '-' : ' ',
              optdef->short_name ? optdef->short_name : ' ',
              opt.app->long_opts && optdef->long_name ? (optdef->short_name ? "," : " ") : "",
              opt.app->long_opts && optdef->long_name ? " --" : "",
              opt.app->long_opts && optdef->long_name ? optdef->long_name : "",
+             optdef->has_arg == optional_argument ? '=' : ' ',
              opt.app->long_opts && optdef->long_name ? 20 - (int) strlen(optdef->long_name) : 24,
              optdef->arg ? optdef->arg : " ",
              optdef->help ? optdef->help : "");
@@ -217,6 +220,10 @@ int options_parse(int argc, char *argv[]) {
         break;
       case OPT_HELP:
         opt.help = true;
+        break;
+      case OPT_EXIT:
+        opt.exit = true;
+        opt.retcode = optarg ? atoi(optarg) : CHPST_ERROR_EXIT;
         break;
       case OPT_VERBOSE:
         opt.verbosity++;

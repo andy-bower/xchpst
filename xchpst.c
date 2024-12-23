@@ -28,14 +28,6 @@
 #include "xchpst.h"
 #include "options.h"
 
-enum chpst_exit {
-  CHPST_ERROR_OPTIONS = 100,
-  CHPST_ERROR_CHANGING_STATE = 111,
-
-  /* chpst(8) returns 100 for no-ops like -v; do likewise */
-  CHPST_OK = CHPST_ERROR_OPTIONS,
-};
-
 static const char *version_str = STRINGIFY(PROG_VERSION);
 
 const struct app apps[] = {
@@ -207,6 +199,11 @@ int main(int argc, char *argv[]) {
     if (is_verbose())
       fprintf(stderr, "also creating mount namespace implicitly due to other options\n");
     opt.new_ns |= CLONE_NEWNS;
+  }
+
+  if (opt.exit) {
+    ret = opt.retcode;
+    goto finish0;
   }
 
   if (opt.help)

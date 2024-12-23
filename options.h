@@ -48,6 +48,7 @@ enum opt:int {
   OPT_VERSION = 0x1000,
   OPT_VERBOSE,
   OPT_HELP,
+  OPT_EXIT,
   OPT_SETUIDGID,
   OPT_ENVUIDGID,
   OPT_ARGV0,
@@ -108,6 +109,8 @@ struct options {
   bool error;
   bool version;
   bool help;
+  bool exit;
+  int retcode;
   int verbosity;
 
   /* The interesting (x)chpsty stuff here */
