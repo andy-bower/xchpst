@@ -342,8 +342,8 @@ int main(int argc, char *argv[]) {
   if (opt.argv0)
     sub_argv[0] = opt.argv0;
 
-  if (opt.env_dir)
-    read_env_dir(opt.env_dir);
+  if (opt.env_dir && !read_env_dir(opt.env_dir))
+    goto finish;
 
   if (opt.envuidgid && usrgrp_specified(&opt.env_users_groups.user)) {
     s = nullptr;
