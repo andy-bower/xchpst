@@ -8,6 +8,7 @@
 
 #include <assert.h>
 #include <ctype.h>
+#include <dirent.h>
 #include <fcntl.h>
 #include <getopt.h>
 #include <grp.h>
@@ -171,6 +172,97 @@ void set_resource_limits(void) {
   set_rlimit(RLIMIT_CPU, &opt.rlimit_cpu);
 }
 
+bool read_env_dir(const char *dir_name) {
+  int dir1 = -1;
+  int dir2 = -1;
+  int file = -1;
+  DIR *dir = nullptr;
+  const char *entity;
+  const struct dirent *de;
+  bool success = false;
+  struct stat statbuf;
+  char *data = nullptr;
+  size_t data_sz = 0;
+  ssize_t ptr;
+  int rc;
+
+  if ((dir1 = open(entity = dir_name, O_RDONLY | O_DIRECTORY)) == -1)
+    goto fail;
+  if ((dir2 = openat(dir1, "./", O_RDONLY | O_DIRECTORY)) == -1)
+    goto fail;
+  if ((dir = fdopendir(dir1)) == nullptr)
+    goto fail;
+
+  for (errno = 0; (de = readdir(dir));) {
+    if (de->d_type == DT_DIR)
+      continue;
+    if ((file = openat(dir2, entity = de->d_name, O_RDONLY)) == -1)
+      goto fail;
+    if ((rc = fstat(file, &statbuf)) == -1)
+      goto fail;
+    if (statbuf.st_size > data_sz) {
+      data_sz = statbuf.st_size;
+      free(data);
+      data = malloc(data_sz + 1);
+      if (data == nullptr)
+        goto fail;
+    }
+
+    /* Read all chunks */
+    for (ptr = 0; ptr < statbuf.st_size; ptr += rc)
+      if ((rc = read(file, data + ptr, statbuf.st_size - ptr)) == -1)
+        goto fail;
+
+    /* Terminate at first newline */
+    for (ptr = 0; ptr < statbuf.st_size; ptr ++)
+      if (data[ptr] == '\n') {
+        statbuf.st_size = ptr;
+        break;
+      }
+
+    /* Turn NUL within value into LF */
+    for (ptr = 0; ptr < statbuf.st_size; ptr ++)
+      if (data[ptr] == '\0')
+        data[ptr] = '\n';
+
+    /* Remove trailing whitespace */
+    for (ptr = statbuf.st_size - 1; ptr >= 0; ptr--)
+      if (data[ptr] == ' ' || data[ptr] == '\t')
+        data[ptr] = '\0';
+      else
+        break;
+
+    close(file);
+    file = -1;
+    data[statbuf.st_size] = '\0';
+
+    if (data[0]) {
+      if (is_verbose())
+        fprintf(stderr, "setting %s=%s\n", de->d_name, data);
+      setenv(de->d_name, data, 1);
+    } else {
+      if (is_verbose())
+        fprintf(stderr, "unsetting %s\n", de->d_name);
+      unsetenv(de->d_name);
+    }
+  }
+  success = errno == 0 ? true : false;
+
+fail:
+  if (!success)
+    fprintf(stderr, "error reading environment \"%s\", %s\n", entity, strerror(errno));
+  free(data);
+  if (file != -1)
+    close(file);
+  if (dir != nullptr)
+    closedir(dir);
+  else if (dir1 != -1)
+    close(dir1);
+  if (dir2)
+    close(dir2);
+  return success;
+}
+
 int main(int argc, char *argv[]) {
   char **sub_argv;
   char *executable;
@@ -249,6 +341,9 @@ int main(int argc, char *argv[]) {
 
   if (opt.argv0)
     sub_argv[0] = opt.argv0;
+
+  if (opt.env_dir)
+    read_env_dir(opt.env_dir);
 
   if (opt.envuidgid && usrgrp_specified(&opt.env_users_groups.user)) {
     s = nullptr;

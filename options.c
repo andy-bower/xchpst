@@ -43,7 +43,7 @@ const struct option_info options_info[] = {
     "set UID and GID vars", "[:]USER[:GROUP]", },
   { C_R, OPT_ARGV0,       'b',  nullptr,       required_argument,
     "launch program with ARGV0 as the argv[0]", "ARGV0" },
-  { 0,   OPT_ENVDIR,      'e',  nullptr,       no_argument,
+  { C_R, OPT_ENVDIR,      'e',  nullptr,       required_argument,
     "populate environment from directory", "DIR" },
   { 0,   OPT_CHROOT,      '/',  nullptr,       required_argument, "change root directory", "DIR" },
   { 0,   OPT_NICE,        'n',  nullptr,       required_argument, "adjust niceness", "INC" },
@@ -240,6 +240,9 @@ int options_parse(int argc, char *argv[]) {
       case OPT_ARGV0:
         opt.argv0 = optarg;
         break;
+      case OPT_ENVDIR:
+        opt.env_dir = optarg;
+        break;
       case OPT_LOCK_WAIT:
         opt.lock_wait = true;
         [[fallthrough]];
@@ -352,7 +355,6 @@ int options_parse(int argc, char *argv[]) {
       case OPT_CLOSE_STDERR:
         opt.close_fds |= 1 << (optdef->option - OPT_CLOSE_STDIN);
         break;
-      case OPT_ENVDIR:
       case OPT_CHROOT:
       case OPT_NICE:
         fprintf(stderr, "-%c%s not yet implemented\n",
