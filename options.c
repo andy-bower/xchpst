@@ -43,6 +43,10 @@ const struct option_info options_info[] = {
     "set UID and GID vars", "[:]USER[:GROUP]", },
   { C_R, OPT_ARGV0,       'b',  nullptr,       required_argument,
     "launch program with ARGV0 as the argv[0]", "ARGV0" },
+  { 0,   OPT_ENVDIR,      'e',  nullptr,       no_argument,
+    "populate environment from directory", "DIR" },
+  { 0,   OPT_CHROOT,      '/',  nullptr,       required_argument, "change root directory", "DIR" },
+  { 0,   OPT_NICE,        'n',  nullptr,       required_argument, "adjust niceness", "INC" },
   { C_R, OPT_LOCK,        'L',  nullptr,       required_argument, "obtain lock; fail fast", "FILE" },
   { C_R, OPT_LOCK_WAIT,   'l',  nullptr,       required_argument, "wait for lock", "FILE" },
   { C_RS,OPT_LIMIT_MEM,   'm',  nullptr,       required_argument,
@@ -54,6 +58,9 @@ const struct option_info options_info[] = {
   { C_RS,OPT_RLIMIT_FSIZE,'f',  nullptr,       required_argument, "set soft RLIMIT_FSIZE", "BYTES" },
   { C_RS,OPT_RLIMIT_CORE, 'c',  nullptr,       required_argument, "set soft RLIMIT_CORE", "BYTES" },
   { C_RS,OPT_RLIMIT_CPU,  't',  nullptr,       required_argument, "set soft RLIMIT_CPU", "SECONDS" },
+  { C_R, OPT_CLOSE_STDIN, '0',  nullptr,       no_argument,       "close stdin" },
+  { C_R, OPT_CLOSE_STDOUT,'1',  nullptr,       no_argument,       "close stdout" },
+  { C_R, OPT_CLOSE_STDERR,'2',  nullptr,       no_argument,       "close stderr" },
 
   /* Options only available in 'softlimit' utility */
   { C_S, OPT_RLIMIT_MEMLOCK,'l', nullptr,      required_argument, "set soft RLIMIT_MEMLOCK", "BYTES" },
@@ -340,12 +347,14 @@ int options_parse(int argc, char *argv[]) {
        if (!(opt.rlimit_core.soft_specified = parse_limit(&opt.rlimit_core.limits.rlim_cur, optarg)))
           opt.error = true;
         break;
-      case OPT_ENVDIR:
-      case OPT_CHROOT:
-      case OPT_NICE:
       case OPT_CLOSE_STDIN:
       case OPT_CLOSE_STDOUT:
       case OPT_CLOSE_STDERR:
+        opt.close_fds |= 1 << (optdef->option - OPT_CLOSE_STDIN);
+        break;
+      case OPT_ENVDIR:
+      case OPT_CHROOT:
+      case OPT_NICE:
         fprintf(stderr, "-%c%s not yet implemented\n",
                         optdef->long_name ? '-' : optdef->short_name,
                         optdef->long_name ? optdef->long_name : "");

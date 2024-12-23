@@ -51,13 +51,13 @@ enum opt:int {
   OPT_EXIT,
   OPT_SETUIDGID,
   OPT_ENVUIDGID,
+  OPT_ARGV0,
   OPT_ENVDIR,
   OPT_CHROOT,
   OPT_NICE,
   OPT_CLOSE_STDIN,
-  OPT_CLOSE_STDOUT,
-  OPT_CLOSE_STDERR,
-  OPT_ARGV0,
+  OPT_CLOSE_STDOUT = OPT_CLOSE_STDIN + STDOUT_FILENO - STDIN_FILENO,
+  OPT_CLOSE_STDERR = OPT_CLOSE_STDIN + STDERR_FILENO - STDIN_FILENO,
   OPT_MOUNT_NS,
   OPT_NET_NS,
   OPT_PID_NS,
@@ -83,6 +83,7 @@ enum opt:int {
   OPT_CAPBS_KEEP,
   OPT_CAPBS_DROP,
 };
+static_assert(STDIN_FILENO == 0);
 
 #define NAME_STR STRINGIFY(PROG_NAME)
 
@@ -142,6 +143,7 @@ struct options {
   struct limit rlimit_fsize;
   struct limit rlimit_core;
   struct limit rlimit_cpu;
+  unsigned close_fds;
   enum cap_op cap_op;
   cap_bits_t cap_bounds;
 };

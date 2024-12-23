@@ -14,6 +14,7 @@
 #include <errno.h>
 #include <sched.h>
 #include <stdarg.h>
+#include <stdbit.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -404,6 +405,9 @@ int main(int argc, char *argv[]) {
   }
 
   set_resource_limits();
+
+  for (unsigned int close_fds = opt.close_fds; close_fds; close_fds &= ~(1 << fd))
+    close(fd = stdc_trailing_zeros(close_fds));
 
   /* Launch the target */
   rc = execvp(executable, sub_argv);
