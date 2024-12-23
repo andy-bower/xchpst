@@ -202,20 +202,11 @@ int main(int argc, char *argv[]) {
   if (is_verbose())
     fprintf(stderr, "invoked as %s(%s)\n", opt.app->name, program_invocation_short_name);
 
-  if (optind == argc)
-    opt.error = true;
-
   if (!(opt.new_ns & CLONE_NEWNS) &&
       (opt.new_ns || opt.private_run || opt.private_tmp || opt.ro_sys)) {
     if (is_verbose())
       fprintf(stderr, "also creating mount namespace implicitly due to other options\n");
     opt.new_ns |= CLONE_NEWNS;
-  }
-
-  if (opt.error) {
-    usage(stderr);
-    ret = CHPST_ERROR_OPTIONS;
-    goto finish0;
   }
 
   if (opt.help)
@@ -225,6 +216,15 @@ int main(int argc, char *argv[]) {
 
   if (opt.help || opt.version) {
     ret = CHPST_OK;
+    goto finish0;
+  }
+
+  if (optind == argc)
+    opt.error = true;
+
+  if (opt.error) {
+    usage(stderr);
+    ret = CHPST_ERROR_OPTIONS;
     goto finish0;
   }
 

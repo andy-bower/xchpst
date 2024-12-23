@@ -67,7 +67,7 @@ void options_print(FILE *out) {
   fprintf(out, "\n OPTIONS\n");
   for (optdef = options_info; optdef - options_info < max_options; optdef++) {
     if (optdef->compat_level & opt.app->compat_level) {
-      printf("  %c%c%s%s%s %-*s %s\n",
+      fprintf(out, "  %c%c%s%s%s %-*s %s\n",
              optdef->short_name ? '-' : ' ',
              optdef->short_name ? optdef->short_name : ' ',
              opt.app->long_opts && optdef->long_name ? (optdef->short_name ? "," : " ") : "",
