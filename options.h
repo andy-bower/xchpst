@@ -51,6 +51,12 @@ enum opt:int {
   OPT_EXIT,
   OPT_SETUIDGID,
   OPT_ENVUIDGID,
+  OPT_ENVDIR,
+  OPT_CHROOT,
+  OPT_NICE,
+  OPT_CLOSE_STDIN,
+  OPT_CLOSE_STDOUT,
+  OPT_CLOSE_STDERR,
   OPT_ARGV0,
   OPT_MOUNT_NS,
   OPT_NET_NS,
@@ -120,10 +126,12 @@ struct options {
   bool private_tmp;
   bool ro_sys;
   bool setuidgid;
+  bool envuidgid;
   bool lock_wait;
   const char *lock_file;
   const char *net_adopt;
   struct users_groups users_groups;
+  struct users_groups env_users_groups;
   struct limit rlimit_data;
   struct limit rlimit_stack;
   struct limit rlimit_as;

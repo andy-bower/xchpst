@@ -180,6 +180,7 @@ int main(int argc, char *argv[]) {
   int lock_fd = -1;
   uid_t uid;
   gid_t gid;
+  char *s;
   int fd;
   int i;
 
@@ -247,6 +248,28 @@ int main(int argc, char *argv[]) {
 
   if (opt.argv0)
     sub_argv[0] = opt.argv0;
+
+  if (opt.envuidgid && usrgrp_specified(&opt.env_users_groups.user)) {
+    s = nullptr;
+    if ((rc = usrgrp_uid_to_text(&s, &opt.env_users_groups.user))) {
+      perror("formatting UID");
+      goto finish;
+    }
+    if (setenv("UID", s, 1) == -1)
+      perror("setting UID");
+    free(s);
+  }
+
+  if (opt.envuidgid && usrgrp_specified(&opt.env_users_groups.group)) {
+    s = nullptr;
+    if ((rc = usrgrp_gid_to_text(&s, &opt.env_users_groups.group))) {
+      perror("formatting GID");
+      goto finish;
+    }
+    if (setenv("GID", s, 1) == -1)
+      perror("setting GID");
+    free(s);
+  }
 
   if (opt.cap_op == CAP_OP_KEEP) {
     int i, max = cap_max_bits();

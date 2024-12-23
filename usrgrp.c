@@ -182,15 +182,33 @@ static void print_group(FILE *out, struct sys_entry *entry) {
           entry->resolved ? "RESOLVED" : "");
 }
 
-void usrgrp_print(FILE *out, struct users_groups *ug) {
+int usrgrp_uid_to_text(char **s, const struct sys_entry *entry) {
+  if (!entry->resolved)
+    return ENOENT;
+  else if (asprintf(s, "%d", entry->uid) == -1)
+    return errno;
+  else
+    return 0;
+}
+
+int usrgrp_gid_to_text(char **s, const struct sys_entry *entry) {
+  if (!entry->resolved)
+    return ENOENT;
+  else if (asprintf(s, "%d", entry->gid) == -1)
+    return errno;
+  else
+    return 0;
+}
+
+void usrgrp_print(FILE *out, const char *what, struct users_groups *ug) {
   int i;
 
-  fprintf(out, "user:");
+  fprintf(out, "%s:\n  user: ", what);
   print_user(out, &ug->user);
-  fprintf(out, "group:");
+  fprintf(out, "  group: ");
   print_group(out, &ug->group);
   for (i = 0; i < ug->num_supplemental; i++) {
-    fprintf(out, "supplemental:");
+    fprintf(out, "  supplemental: ");
     print_group(out, ug->supplemental + i);
   }
 }

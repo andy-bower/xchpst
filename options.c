@@ -39,6 +39,8 @@ const struct option_info options_info[] = {
   { C_R, OPT_VERBOSE,     'v',  "verbose",     no_argument,       "be verbose" },
   { C_R, OPT_SETUIDGID,   'u',  nullptr,       required_argument,
     "set uid, gid and supplementary groups", "[:]USER[:GROUP]*", },
+  { C_R, OPT_ENVUIDGID,   'U',  nullptr,       required_argument,
+    "set UID and GID vars", "[:]USER[:GROUP]", },
   { C_R, OPT_ARGV0,       'b',  nullptr,       required_argument,
     "launch program with ARGV0 as the argv[0]", "ARGV0" },
   { C_R, OPT_LOCK,        'L',  nullptr,       required_argument, "obtain lock; fail fast", "FILE" },
@@ -277,8 +279,17 @@ int options_parse(int argc, char *argv[]) {
         else if (usrgrp_resolve(&opt.users_groups))
           opt.error = true;
         if (opt.verbosity > 1)
-          usrgrp_print(stderr, &opt.users_groups);
+          usrgrp_print(stderr, "setuidgid", &opt.users_groups);
         opt.setuidgid = true;
+        break;
+      case OPT_ENVUIDGID:
+        if (usrgrp_parse(&opt.env_users_groups, optarg))
+          opt.error = true;
+        else if (usrgrp_resolve(&opt.env_users_groups))
+          opt.error = true;
+        if (opt.verbosity > 1)
+          usrgrp_print(stderr, "envuidgid", &opt.env_users_groups);
+        opt.envuidgid = true;
         break;
       case OPT_LIMIT_MEM:
         if (!(opt.rlimit_memlock.soft_specified = parse_limit(&opt.rlimit_memlock.limits.rlim_cur, optarg))) {
@@ -329,7 +340,12 @@ int options_parse(int argc, char *argv[]) {
        if (!(opt.rlimit_core.soft_specified = parse_limit(&opt.rlimit_core.limits.rlim_cur, optarg)))
           opt.error = true;
         break;
-      case OPT_ENVUIDGID:
+      case OPT_ENVDIR:
+      case OPT_CHROOT:
+      case OPT_NICE:
+      case OPT_CLOSE_STDIN:
+      case OPT_CLOSE_STDOUT:
+      case OPT_CLOSE_STDERR:
         fprintf(stderr, "-%c%s not yet implemented\n",
                         optdef->long_name ? '-' : optdef->short_name,
                         optdef->long_name ? optdef->long_name : "");

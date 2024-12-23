@@ -32,9 +32,15 @@ struct users_groups {
   void *buf_tok;
 };
 
+static inline bool usrgrp_specified(const struct sys_entry *entry) {
+  return entry->tok_type != TOK_NONE;
+}
+
 int usrgrp_parse(struct users_groups *ug, const char *arg);
 int usrgrp_resolve(struct users_groups *ug);
-void usrgrp_print(FILE *out, struct users_groups *ug);
+void usrgrp_print(FILE *out, const char *what, struct users_groups *ug);
 void usrgrp_free(struct users_groups *ug);
+int usrgrp_uid_to_text(char **s, const struct sys_entry *entry);
+int usrgrp_gid_to_text(char **s, const struct sys_entry *entry);
 
 #endif
