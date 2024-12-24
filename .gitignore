@@ -7,3 +7,8 @@
 xchpst
 chpst
 softlimit
+envdir
+envuidgid
+pgrphack
+setlock
+setuidgid

@@ -34,7 +34,7 @@ $(ALT_EXES): $(name)
 	$(LN) $< $@
 
 clean:
-	$(RM) $(name) $(OBJS) $(DEP)
+	$(RM) $(name) $(OBJS) $(DEP) $(ALT_EXES)
 
 install:
 	$(INSTALL) -m 755 -D -t $(DESTDIR)$(prefix)/bin               $(name)
