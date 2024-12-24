@@ -27,7 +27,7 @@ const struct option_info options_info[] = {
   { C_R, OPT_ENVDIR,      'e',  nullptr,       required_argument,
     "populate environment from directory", "DIR" },
   { C_R, OPT_CHROOT,      '/',  nullptr,       required_argument, "change root directory", "DIR" },
-  { 0,   OPT_NICE,        'n',  nullptr,       required_argument, "adjust niceness", "INC" },
+  { C_R, OPT_NICE,        'n',  nullptr,       required_argument, "adjust niceness", "INC" },
   { C_R, OPT_LOCK_WAIT,   'l',  nullptr,       required_argument, "wait for lock", "FILE" },
   { C_R, OPT_LOCK,        'L',  nullptr,       required_argument, "obtain lock; fail fast", "FILE" },
   { C_RS,OPT_LIMIT_MEM,   'm',  nullptr,       required_argument,
@@ -247,6 +247,10 @@ int options_parse(int argc, char *argv[]) {
       case OPT_CHROOT:
         opt.chroot = optarg;
         break;
+      case OPT_NICE:
+        opt.renice = true;
+        opt.niceness = atoi(optarg);
+        break;
       case OPT_LOCK_WAIT:
         opt.lock_wait = true;
         [[fallthrough]];
@@ -359,7 +363,6 @@ int options_parse(int argc, char *argv[]) {
       case OPT_CLOSE_STDERR:
         opt.close_fds |= 1 << (optdef->option - OPT_CLOSE_STDIN);
         break;
-      case OPT_NICE:
       case OPT_PGRPHACK:
         fprintf(stderr, "-%c%s not yet implemented\n",
                         optdef->long_name ? '-' : optdef->short_name,

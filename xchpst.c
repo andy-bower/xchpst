@@ -382,6 +382,20 @@ int main(int argc, char *argv[]) {
       fprintf(stderr, "entered chroot: %s\n", opt.chroot);
   }
 
+  if (opt.renice) {
+    int newnice;
+
+    errno = 0;
+    newnice = nice(opt.niceness);
+    if (errno) {
+      fprintf(stderr, "could not change niceness, %s\n", strerror(errno));
+      goto finish;
+    }
+    if (is_verbose()) {
+      fprintf(stderr, "now at niceness %d\n", newnice);
+    }
+  }
+
   if (opt.cap_op == CAP_OP_KEEP) {
     int i, max = cap_max_bits();
     cap_bits_t b = 1ull << (max - 1);

@@ -125,6 +125,8 @@ struct options {
   /* The interesting (x)chpsty stuff here */
   char *argv0;
   int new_ns;
+  int niceness;
+  bool renice;
   bool private_run;
   bool private_tmp;
   bool ro_sys;
