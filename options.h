@@ -52,6 +52,7 @@ enum opt:int {
   OPT_ARGV0,
   OPT_ENVDIR,
   OPT_CHROOT,
+  OPT_CHDIR,
   OPT_NICE,
   OPT_LOCK_WAIT,
   OPT_LOCK,
@@ -153,6 +154,7 @@ struct options {
   const char *lock_file;
   const char *env_dir;
   const char *chroot;
+  const char *chdir;
   const char *net_adopt;
   struct users_groups users_groups;
   struct users_groups env_users_groups;

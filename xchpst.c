@@ -403,6 +403,16 @@ int main(int argc, char *argv[]) {
       fprintf(stderr, "entered chroot: %s\n", opt.chroot);
   }
 
+  if (opt.chdir) {
+    rc = chdir(opt.chdir);
+    if (rc == -1) {
+      perror("chdir");
+      goto finish;
+    }
+    if (is_verbose())
+      fprintf(stderr, "change dirctory: %s\n", opt.chdir);
+  }
+
   if (opt.renice) {
     int newnice;
 
