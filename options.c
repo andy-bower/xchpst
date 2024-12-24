@@ -197,6 +197,163 @@ bool parse_caps(cap_bits_t *caps, char *names) {
   return good;
 }
 
+static void handle_option(enum compat_level *compat,
+                          const struct option_info *optdef) {
+  switch (optdef->option) {
+  case OPT_LEGACY:
+    *compat = COMPAT_CHPST;
+    break;
+  case OPT_VERSION:
+    opt.version = true;
+    break;
+  case OPT_HELP:
+    opt.help = true;
+    break;
+  case OPT_EXIT:
+    opt.exit = true;
+    opt.retcode = optarg ? atoi(optarg) : CHPST_ERROR_EXIT;
+    break;
+  case OPT_VERBOSE:
+    opt.verbosity++;
+    break;
+  case OPT_ARGV0:
+    opt.argv0 = optarg;
+    break;
+  case OPT_ENVDIR:
+    opt.env_dir = optarg;
+    break;
+  case OPT_CHROOT:
+    opt.chroot = optarg;
+    break;
+  case OPT_NICE:
+    opt.renice = true;
+    opt.niceness = atoi(optarg);
+    break;
+  case OPT_LOCK_WAIT:
+    opt.lock_wait = true;
+    [[fallthrough]];
+  case OPT_LOCK:
+    opt.lock_file = optarg;
+    break;
+  case OPT_MOUNT_NS:
+    opt.new_ns |= CLONE_NEWNS;
+    break;
+  case OPT_NET_NS:
+    opt.new_ns |= CLONE_NEWNET;
+    break;
+  case OPT_PID_NS:
+    opt.new_ns |= CLONE_NEWPID;
+    break;
+  case OPT_USER_NS:
+    opt.new_ns |= CLONE_NEWUSER;
+    break;
+  case OPT_NET_ADOPT:
+    opt.net_adopt = optarg;
+    break;
+  case OPT_PRIVATE_RUN:
+    opt.private_run = true;
+    break;
+  case OPT_PRIVATE_TMP:
+    opt.private_tmp = true;
+    break;
+  case OPT_RO_SYS:
+    opt.ro_sys = true;
+    break;
+  case OPT_CAPBS_KEEP:
+    if (!parse_caps(&opt.cap_bounds, optarg))
+      opt.error = true;
+    opt.cap_op = CAP_OP_KEEP;
+    break;
+  case OPT_CAPBS_DROP:
+    if (!parse_caps(&opt.cap_bounds, optarg))
+      opt.error = true;
+    opt.cap_op = CAP_OP_DROP;
+    break;
+  case OPT_SETUIDGID:
+    if (usrgrp_parse(&opt.users_groups, optarg))
+      opt.error = true;
+    else if (usrgrp_resolve(&opt.users_groups))
+      opt.error = true;
+    if (opt.verbosity > 1)
+      usrgrp_print(stderr, "setuidgid", &opt.users_groups);
+    opt.setuidgid = true;
+    break;
+  case OPT_ENVUIDGID:
+    if (usrgrp_parse(&opt.env_users_groups, optarg))
+      opt.error = true;
+    else if (usrgrp_resolve(&opt.env_users_groups))
+      opt.error = true;
+    if (opt.verbosity > 1)
+      usrgrp_print(stderr, "envuidgid", &opt.env_users_groups);
+    opt.envuidgid = true;
+    break;
+  case OPT_LIMIT_MEM:
+    if (!(opt.rlimit_memlock.soft_specified = parse_limit(&opt.rlimit_memlock.limits.rlim_cur, optarg))) {
+      opt.error = true;
+    } else {
+      opt.rlimit_data = opt.rlimit_memlock;
+      opt.rlimit_stack = opt.rlimit_memlock;
+      opt.rlimit_as = opt.rlimit_as;
+    }
+    break;
+   case OPT_RLIMIT_DATA:
+    if (!(opt.rlimit_data.soft_specified = parse_limit(&opt.rlimit_data.limits.rlim_cur, optarg)))
+      opt.error = true;
+    break;
+  case OPT_RLIMIT_MEMLOCK:
+    if (!(opt.rlimit_memlock.soft_specified = parse_limit(&opt.rlimit_memlock.limits.rlim_cur, optarg)))
+      opt.error = true;
+    break;
+  case OPT_RLIMIT_AS:
+    if (!(opt.rlimit_as.soft_specified = parse_limit(&opt.rlimit_as.limits.rlim_cur, optarg)))
+      opt.error = true;
+    break;
+  case OPT_RLIMIT_STACK:
+    if (!(opt.rlimit_stack.soft_specified = parse_limit(&opt.rlimit_stack.limits.rlim_cur, optarg)))
+      opt.error = true;
+    break;
+  case OPT_RLIMIT_NOFILE:
+    if (!(opt.rlimit_nofile.soft_specified = parse_limit(&opt.rlimit_nofile.limits.rlim_cur, optarg)))
+      opt.error = true;
+    break;
+  case OPT_RLIMIT_RSS:
+    if (!(opt.rlimit_rss.soft_specified = parse_limit(&opt.rlimit_rss.limits.rlim_cur, optarg)))
+      opt.error = true;
+    break;
+  case OPT_RLIMIT_NPROC:
+    if (!(opt.rlimit_nproc.soft_specified = parse_limit(&opt.rlimit_nproc.limits.rlim_cur, optarg)))
+      opt.error = true;
+    break;
+  case OPT_RLIMIT_FSIZE:
+   if (!(opt.rlimit_fsize.soft_specified = parse_limit(&opt.rlimit_fsize.limits.rlim_cur, optarg)))
+      opt.error = true;
+    break;
+  case OPT_RLIMIT_CPU:
+   if (!(opt.rlimit_cpu.soft_specified = parse_limit(&opt.rlimit_cpu.limits.rlim_cur, optarg)))
+      opt.error = true;
+    break;
+  case OPT_RLIMIT_CORE:
+   if (!(opt.rlimit_core.soft_specified = parse_limit(&opt.rlimit_core.limits.rlim_cur, optarg)))
+      opt.error = true;
+    break;
+  case OPT_PGRPHACK:
+      opt.new_session = true;
+    break;
+  case OPT_CLOSE_STDIN:
+  case OPT_CLOSE_STDOUT:
+  case OPT_CLOSE_STDERR:
+    opt.close_fds |= 1 << (optdef->option - OPT_CLOSE_STDIN);
+    break;
+  /* Avoid default case to get useful compiler warnings instead.
+  default:
+    fprintf(stderr, "-%c%s not yet implemented\n",
+                    optdef->long_name ? '-' : optdef->short_name,
+                    optdef->long_name ? optdef->long_name : "");
+    opt.error = true;
+   */
+  }
+}
+
 int options_parse(int argc, char *argv[]) {
   const struct option_info *optdef;
   enum compat_level compat = opt.app->compat_level;
@@ -221,159 +378,26 @@ int options_parse(int argc, char *argv[]) {
                 optdef->long_name ? optdef->long_name : short_name);
         opt.error = true;
     } else {
-     switch (optdef->option) {
-      case OPT_LEGACY:
-        compat = COMPAT_CHPST;
-        break;
-      case OPT_VERSION:
-        opt.version = true;
-        break;
-      case OPT_HELP:
-        opt.help = true;
-        break;
-      case OPT_EXIT:
-        opt.exit = true;
-        opt.retcode = optarg ? atoi(optarg) : CHPST_ERROR_EXIT;
-        break;
-      case OPT_VERBOSE:
-        opt.verbosity++;
-        break;
-      case OPT_ARGV0:
-        opt.argv0 = optarg;
-        break;
-      case OPT_ENVDIR:
-        opt.env_dir = optarg;
-        break;
-      case OPT_CHROOT:
-        opt.chroot = optarg;
-        break;
-      case OPT_NICE:
-        opt.renice = true;
-        opt.niceness = atoi(optarg);
-        break;
-      case OPT_LOCK_WAIT:
-        opt.lock_wait = true;
-        [[fallthrough]];
-      case OPT_LOCK:
-        opt.lock_file = optarg;
-        break;
-      case OPT_MOUNT_NS:
-        opt.new_ns |= CLONE_NEWNS;
-        break;
-      case OPT_NET_NS:
-        opt.new_ns |= CLONE_NEWNET;
-        break;
-      case OPT_PID_NS:
-        opt.new_ns |= CLONE_NEWPID;
-        break;
-      case OPT_USER_NS:
-        opt.new_ns |= CLONE_NEWUSER;
-        break;
-      case OPT_NET_ADOPT:
-        opt.net_adopt = optarg;
-        break;
-      case OPT_PRIVATE_RUN:
-        opt.private_run = true;
-        break;
-      case OPT_PRIVATE_TMP:
-        opt.private_tmp = true;
-        break;
-      case OPT_RO_SYS:
-        opt.ro_sys = true;
-        break;
-      case OPT_CAPBS_KEEP:
-        if (!parse_caps(&opt.cap_bounds, optarg))
-          opt.error = true;
-        opt.cap_op = CAP_OP_KEEP;
-        break;
-      case OPT_CAPBS_DROP:
-        if (!parse_caps(&opt.cap_bounds, optarg))
-          opt.error = true;
-        opt.cap_op = CAP_OP_DROP;
-        break;
-      case OPT_SETUIDGID:
-        if (usrgrp_parse(&opt.users_groups, optarg))
-          opt.error = true;
-        else if (usrgrp_resolve(&opt.users_groups))
-          opt.error = true;
-        if (opt.verbosity > 1)
-          usrgrp_print(stderr, "setuidgid", &opt.users_groups);
-        opt.setuidgid = true;
-        break;
-      case OPT_ENVUIDGID:
-        if (usrgrp_parse(&opt.env_users_groups, optarg))
-          opt.error = true;
-        else if (usrgrp_resolve(&opt.env_users_groups))
-          opt.error = true;
-        if (opt.verbosity > 1)
-          usrgrp_print(stderr, "envuidgid", &opt.env_users_groups);
-        opt.envuidgid = true;
-        break;
-      case OPT_LIMIT_MEM:
-        if (!(opt.rlimit_memlock.soft_specified = parse_limit(&opt.rlimit_memlock.limits.rlim_cur, optarg))) {
-          opt.error = true;
-        } else {
-          opt.rlimit_data = opt.rlimit_memlock;
-          opt.rlimit_stack = opt.rlimit_memlock;
-          opt.rlimit_as = opt.rlimit_as;
-        }
-        break;
-       case OPT_RLIMIT_DATA:
-        if (!(opt.rlimit_data.soft_specified = parse_limit(&opt.rlimit_data.limits.rlim_cur, optarg)))
-          opt.error = true;
-        break;
-      case OPT_RLIMIT_MEMLOCK:
-        if (!(opt.rlimit_memlock.soft_specified = parse_limit(&opt.rlimit_memlock.limits.rlim_cur, optarg)))
-          opt.error = true;
-        break;
-      case OPT_RLIMIT_AS:
-        if (!(opt.rlimit_as.soft_specified = parse_limit(&opt.rlimit_as.limits.rlim_cur, optarg)))
-          opt.error = true;
-        break;
-      case OPT_RLIMIT_STACK:
-        if (!(opt.rlimit_stack.soft_specified = parse_limit(&opt.rlimit_stack.limits.rlim_cur, optarg)))
-          opt.error = true;
-        break;
-      case OPT_RLIMIT_NOFILE:
-        if (!(opt.rlimit_nofile.soft_specified = parse_limit(&opt.rlimit_nofile.limits.rlim_cur, optarg)))
-          opt.error = true;
-        break;
-      case OPT_RLIMIT_RSS:
-        if (!(opt.rlimit_rss.soft_specified = parse_limit(&opt.rlimit_rss.limits.rlim_cur, optarg)))
-          opt.error = true;
-        break;
-      case OPT_RLIMIT_NPROC:
-        if (!(opt.rlimit_nproc.soft_specified = parse_limit(&opt.rlimit_nproc.limits.rlim_cur, optarg)))
-          opt.error = true;
-        break;
-      case OPT_RLIMIT_FSIZE:
-       if (!(opt.rlimit_fsize.soft_specified = parse_limit(&opt.rlimit_fsize.limits.rlim_cur, optarg)))
-          opt.error = true;
-        break;
-      case OPT_RLIMIT_CPU:
-       if (!(opt.rlimit_cpu.soft_specified = parse_limit(&opt.rlimit_cpu.limits.rlim_cur, optarg)))
-          opt.error = true;
-        break;
-      case OPT_RLIMIT_CORE:
-       if (!(opt.rlimit_core.soft_specified = parse_limit(&opt.rlimit_core.limits.rlim_cur, optarg)))
-          opt.error = true;
-        break;
-      case OPT_PGRPHACK:
-          opt.new_session = true;
-        break;
-      case OPT_CLOSE_STDIN:
-      case OPT_CLOSE_STDOUT:
-      case OPT_CLOSE_STDERR:
-        opt.close_fds |= 1 << (optdef->option - OPT_CLOSE_STDIN);
-        break;
-/*
-        fprintf(stderr, "-%c%s not yet implemented\n",
-                        optdef->long_name ? '-' : optdef->short_name,
-                        optdef->long_name ? optdef->long_name : "");
-        opt.error = true;
- */
-      }
+      handle_option(&compat, optdef);
     }
+  }
+
+  assert(opt.app->takes_positional_opts <= MAX_POSITIONAL_OPTS);
+  for (int i = 0; i < opt.app->takes_positional_opts; i++) {
+    enum opt option = opt.app->positional_opts[i];
+    if (optind == argc) {
+      opt.error = true;
+      break;
+    }
+    optarg = argv[optind++];
+
+    /* Look up option definition */
+    for (optdef = options_info;
+         optdef - options_info < max_options && option != optdef->option;
+         optdef++);
+    assert(optdef);
+
+    handle_option(&compat, optdef);
   }
   return optind;
 }
@@ -382,4 +406,5 @@ void options_free(void) {
   if (optstr)
     free(optstr);
   usrgrp_free(&opt.users_groups);
+  usrgrp_free(&opt.env_users_groups);
 }

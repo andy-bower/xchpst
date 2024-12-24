@@ -20,9 +20,10 @@
 #include "usrgrp.h"
 
 enum compat_level {
-  COMPAT_CHPST     = 01,
-  COMPAT_XCHPST    = 02,
-  COMPAT_SOFTLIMIT = 04,
+  COMPAT_CHPST     = 001,
+  COMPAT_XCHPST    = 002,
+  COMPAT_SOFTLIMIT = 004,
+  COMPAT_ENVDIR    = 010,
 };
 
 enum verbosity {
@@ -38,12 +39,6 @@ constexpr enum compat_level C_0 = COMPAT_CHPST;
 constexpr enum compat_level C_S = COMPAT_SOFTLIMIT;
 constexpr enum compat_level C_RS = C_R | C_S;
 constexpr enum compat_level C_XS = C_X | C_S;
-
-struct app {
-  enum compat_level compat_level;
-  const char *name;
-  bool long_opts;
-};
 
 enum opt:int {
   OPT_SETUIDGID = 0x1000,
@@ -86,6 +81,15 @@ enum opt:int {
   OPT_CAPBS_DROP,
 };
 static_assert(STDIN_FILENO == 0);
+
+constexpr int MAX_POSITIONAL_OPTS = 1;
+struct app {
+  enum compat_level compat_level;
+  const char *name;
+  bool long_opts;
+  int takes_positional_opts;
+  enum opt positional_opts[MAX_POSITIONAL_OPTS];
+};
 
 #define NAME_STR STRINGIFY(PROG_NAME)
 

@@ -36,6 +36,7 @@ const struct app apps[] = {
   { COMPAT_CHPST,     "chpst",     .long_opts = false },
   { COMPAT_XCHPST,    "xchpst",    .long_opts = true },
   { COMPAT_SOFTLIMIT, "softlimit", .long_opts = false },
+  { COMPAT_ENVDIR,    "envdir",    false, 1, { OPT_ENVDIR } },
 };
 constexpr size_t max_apps = sizeof apps / (sizeof *apps);
 
@@ -183,6 +184,8 @@ bool read_env_dir(const char *dir_name) {
   struct stat statbuf;
   char *data = nullptr;
   size_t data_sz = 0;
+  size_t buffered;
+  size_t end;
   ssize_t ptr;
   int rc;
 
@@ -208,25 +211,22 @@ bool read_env_dir(const char *dir_name) {
         goto fail;
     }
 
-    /* Read all chunks */
-    for (ptr = 0; ptr < statbuf.st_size; ptr += rc)
-      if ((rc = read(file, data + ptr, statbuf.st_size - ptr)) == -1)
-        goto fail;
-
-    /* Terminate at first newline */
-    for (ptr = 0; ptr < statbuf.st_size; ptr ++)
-      if (data[ptr] == '\n') {
-        statbuf.st_size = ptr;
-        break;
+    for (ptr = 0, buffered = 0, end = statbuf.st_size; ptr < end; ptr++) {
+      /* Slurp chunks of data */
+      if (ptr == buffered) {
+        if ((rc = read(file, data + ptr, end - ptr)) == -1)
+          goto fail;
+        else
+          buffered += rc;
       }
-
-    /* Turn NUL within value into LF */
-    for (ptr = 0; ptr < statbuf.st_size; ptr ++)
-      if (data[ptr] == '\0')
+      /* Terminate at first LF; turn NUL within value into LF */
+      if (data[ptr] == '\n')
+        end = ptr;
+      else if (data[ptr] == '\0')
         data[ptr] = '\n';
-
+    }
     /* Remove trailing whitespace */
-    for (ptr = statbuf.st_size - 1; ptr >= 0; ptr--)
+    for (ptr = end - 1; ptr >= 0; ptr--)
       if (data[ptr] == ' ' || data[ptr] == '\t')
         data[ptr] = '\0';
       else
@@ -234,9 +234,9 @@ bool read_env_dir(const char *dir_name) {
 
     close(file);
     file = -1;
-    data[statbuf.st_size] = '\0';
 
-    if (data[0]) {
+    if (statbuf.st_size != 0) {
+      data[end] = '\0';
       if (is_verbose())
         fprintf(stderr, "setting %s=%s\n", de->d_name, data);
       setenv(de->d_name, data, 1);

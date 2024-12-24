@@ -20,7 +20,7 @@ DEP = $(wildcard *.d)
 prefix ?= /usr
 
 OBJS = xchpst.o options.o usrgrp.o
-ALT_EXES = chpst softlimit
+ALT_EXES = chpst softlimit envdir
 
 .PHONY: all clean install
 
