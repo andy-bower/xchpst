@@ -37,6 +37,7 @@ clean:
 	$(RM) $(name) $(OBJS) $(DEP)
 
 install:
-	$(INSTALL) -m 755 -D -t $(DESTDIR)$(prefix)/bin               $(name) $(ALT_EXES)
+	$(INSTALL) -m 755 -D -t $(DESTDIR)$(prefix)/bin               $(name)
+#	$(INSTALL) -m 755 -D -t $(DESTDIR)$(prefix)/bin               $(ALT_EXES)
 	$(INSTALL) -m 644 -D -t $(DESTDIR)$(prefix)/share/doc/$(name) xchpst-funcs.sh
 #	$(INSTALL) -m 644 -D -t $(DESTDIR)$(prefix)/share/man/man1    $(name).1

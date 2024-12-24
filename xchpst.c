@@ -499,6 +499,21 @@ int main(int argc, char *argv[]) {
     remount_sys();
   }
 
+  if (opt.chroot) {
+    rc = chdir(opt.chroot);
+    if (rc == -1) {
+      perror("chdir for chroot");
+      goto finish;
+    }
+    rc = chroot(".");
+    if (rc == -1) {
+      perror("chroot");
+      goto finish;
+    }
+    if (is_verbose())
+      fprintf(stderr, "entered chroot: %s\n", opt.chroot);
+  }
+
   set_resource_limits();
 
   for (unsigned int close_fds = opt.close_fds; close_fds; close_fds &= ~(1 << fd))

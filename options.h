@@ -133,6 +133,7 @@ struct options {
   bool lock_wait;
   const char *lock_file;
   const char *env_dir;
+  const char *chroot;
   const char *net_adopt;
   struct users_groups users_groups;
   struct users_groups env_users_groups;
