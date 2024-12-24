@@ -367,6 +367,21 @@ int main(int argc, char *argv[]) {
     free(s);
   }
 
+  if (opt.chroot) {
+    rc = chdir(opt.chroot);
+    if (rc == -1) {
+      perror("chdir for chroot");
+      goto finish;
+    }
+    rc = chroot(".");
+    if (rc == -1) {
+      perror("chroot");
+      goto finish;
+    }
+    if (is_verbose())
+      fprintf(stderr, "entered chroot: %s\n", opt.chroot);
+  }
+
   if (opt.cap_op == CAP_OP_KEEP) {
     int i, max = cap_max_bits();
     cap_bits_t b = 1ull << (max - 1);
@@ -497,21 +512,6 @@ int main(int argc, char *argv[]) {
 
   if (opt.ro_sys) {
     remount_sys();
-  }
-
-  if (opt.chroot) {
-    rc = chdir(opt.chroot);
-    if (rc == -1) {
-      perror("chdir for chroot");
-      goto finish;
-    }
-    rc = chroot(".");
-    if (rc == -1) {
-      perror("chroot");
-      goto finish;
-    }
-    if (is_verbose())
-      fprintf(stderr, "entered chroot: %s\n", opt.chroot);
   }
 
   set_resource_limits();
