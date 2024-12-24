@@ -48,9 +48,11 @@ static void version(FILE *out) {
 
 static void usage(FILE *out) {
   version(out);
-  fprintf(out,
-          "\nusage: %s OPTIONS [--] PROG...    launch PROG with changed process state\n",
+  fprintf(out, "\nusage: %s OPTIONS [--]",
           program_invocation_short_name);
+  options_print_positional(out);
+  fprintf(out, " PROG...    launch PROG with changed process state\n");
+  options_explain_positional(out);
   options_print(out);
 }
 

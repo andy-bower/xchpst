@@ -171,6 +171,8 @@ static inline bool is_debug(void) {
 
 void options_init(void);
 void options_print(FILE *out);
+void options_print_positional(FILE *out);
+void options_explain_positional(FILE *out);
 int options_parse(int argc, char *argv[]);
 void options_free(void);
 

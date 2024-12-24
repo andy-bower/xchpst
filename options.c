@@ -75,10 +75,12 @@ static char *optstr;
 
 void options_print(FILE *out) {
   const struct option_info *optdef;
+  int i = 0;
 
-  fprintf(out, "\n OPTIONS\n");
   for (optdef = options_info; optdef - options_info < max_options; optdef++) {
     if (optdef->compat_level & opt.app->compat_level) {
+      if (i++ == 0)
+        fprintf(out, "\n OPTIONS\n");
       fprintf(out, "  %c%c%s%s%s%c%-*s %s\n",
              optdef->short_name ? '-' : ' ',
              optdef->short_name ? optdef->short_name : ' ',
@@ -90,6 +92,39 @@ void options_print(FILE *out) {
              optdef->arg ? optdef->arg : " ",
              optdef->help ? optdef->help : "");
     }
+  }
+}
+
+void options_print_positional(FILE *out) {
+  int i;
+
+  for (i = 0; i < opt.app->takes_positional_opts; i++) {
+    const struct option_info *optdef;
+    enum opt option = opt.app->positional_opts[i];
+
+    /* Look up option definition */
+    for (optdef = options_info;
+         optdef - options_info < max_options && option != optdef->option;
+         optdef++);
+    fprintf(out, " %s", optdef->arg);
+  }
+}
+
+void options_explain_positional(FILE *out) {
+  int i;
+
+  if (opt.app->takes_positional_opts)
+    fprintf(out, "\n");
+
+  for (i = 0; i < opt.app->takes_positional_opts; i++) {
+    const struct option_info *optdef;
+    enum opt option = opt.app->positional_opts[i];
+
+    /* Look up option definition */
+    for (optdef = options_info;
+         optdef - options_info < max_options && option != optdef->option;
+         optdef++);
+    fprintf(out, " %-10s %s\n", optdef->arg, optdef->help);
   }
 }
 
