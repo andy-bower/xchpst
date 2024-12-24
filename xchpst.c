@@ -37,6 +37,10 @@ const struct app apps[] = {
   { COMPAT_XCHPST,    "xchpst",    .long_opts = true },
   { COMPAT_SOFTLIMIT, "softlimit", .long_opts = false },
   { COMPAT_ENVDIR,    "envdir",    false, 1, { OPT_ENVDIR } },
+  { COMPAT_PGRPHACK,  "pgrphack",  false, 1, { OPT_PGRPHACK } },
+  { COMPAT_SETUIDGID, "setuidgid", false, 1, { OPT_SETUIDGID } },
+  { COMPAT_ENVUIDGID, "envuidgid", false, 1, { OPT_ENVUIDGID } },
+  { COMPAT_SETLOCK,   "setlock",   false, 1, { OPT_LOCK_WAIT } },
 };
 constexpr size_t max_apps = sizeof apps / (sizeof *apps);
 
@@ -330,13 +334,18 @@ int main(int argc, char *argv[]) {
   executable = argv[optind];
 
   if (opt.lock_file) {
+    if (opt.lock_nowait_override)
+      opt.lock_wait = false;
     lock_fd = open(opt.lock_file, O_WRONLY | O_NDELAY | O_APPEND | O_CREAT, 0600);
-    if (lock_fd == -1) {
-      perror("opening lock file");
-      goto finish;
+    if (lock_fd != -1 && flock(lock_fd, LOCK_EX | (opt.lock_wait ? 0 : LOCK_NB)) == -1) {
+      close(lock_fd);
+      lock_fd = -1;
     }
-    if (flock(lock_fd, LOCK_EX | (opt.lock_wait ? 0 : LOCK_NB)) == -1) {
-      perror("obtaining lock");
+    if (lock_fd == -1) {
+      if (opt.lock_quiet)
+        ret = CHPST_ERROR_EXIT;
+      else
+        fprintf(stderr, "error obtaining lock, %s\n", strerror(errno));
       goto finish;
     }
   }

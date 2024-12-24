@@ -20,7 +20,7 @@ DEP = $(wildcard *.d)
 prefix ?= /usr
 
 OBJS = xchpst.o options.o usrgrp.o
-ALT_EXES = chpst softlimit envdir
+ALT_EXES = chpst softlimit envdir pgrphack setuidgid envuidgid setlock
 
 .PHONY: all clean install
 

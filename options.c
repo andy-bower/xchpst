@@ -30,6 +30,10 @@ const struct option_info options_info[] = {
   { C_R, OPT_NICE,        'n',  nullptr,       required_argument, "adjust niceness", "INC" },
   { C_R, OPT_LOCK_WAIT,   'l',  nullptr,       required_argument, "wait for lock", "FILE" },
   { C_R, OPT_LOCK,        'L',  nullptr,       required_argument, "obtain lock; fail fast", "FILE" },
+  { C_L, OPT_LOCKOPT_WAIT,'N',  nullptr,       no_argument,       "wait for lock (default)" },
+  { C_L, OPT_LOCKOPT_TRY, 'n',  nullptr,       no_argument,       "don't wait for lock" },
+  { C_L, OPT_LOCKOPT_NOISY,'X', nullptr,       no_argument,       "fail noisily (default)" },
+  { C_L, OPT_LOCKOPT_QUIET,'x', nullptr,       no_argument,       "fail silently" },
   { C_RS,OPT_LIMIT_MEM,   'm',  nullptr,       required_argument,
     "set soft DATA, STACK, MEMLOCK and AS limits", "BYTES" },
   { C_RS,OPT_RLIMIT_DATA, 'd',  nullptr,       required_argument, "set soft RLIMIT_DATA", "BYTES" },
@@ -106,7 +110,8 @@ void options_print_positional(FILE *out) {
     for (optdef = options_info;
          optdef - options_info < max_options && option != optdef->option;
          optdef++);
-    fprintf(out, " %s", optdef->arg);
+    if (optdef->has_arg != no_argument)
+      fprintf(out, " %s", optdef->arg);
   }
 }
 
@@ -124,7 +129,9 @@ void options_explain_positional(FILE *out) {
     for (optdef = options_info;
          optdef - options_info < max_options && option != optdef->option;
          optdef++);
-    fprintf(out, " %-10s %s\n", optdef->arg, optdef->help);
+    fprintf(out, " %-10s %s\n",
+            optdef->has_arg != no_argument ? optdef->arg : "",
+            optdef->help);
   }
 }
 
@@ -270,6 +277,19 @@ static void handle_option(enum compat_level *compat,
   case OPT_LOCK:
     opt.lock_file = optarg;
     break;
+  case OPT_LOCKOPT_WAIT:
+    opt.lock_wait = true;
+    break;
+  case OPT_LOCKOPT_TRY:
+    opt.lock_wait = false;
+    opt.lock_nowait_override = true;
+    break;
+  case OPT_LOCKOPT_NOISY:
+    opt.lock_quiet = false;
+    break;
+  case OPT_LOCKOPT_QUIET:
+    opt.lock_quiet = true;
+    break;
   case OPT_MOUNT_NS:
     opt.new_ns |= CLONE_NEWNS;
     break;
@@ -398,20 +418,33 @@ int options_parse(int argc, char *argv[]) {
                 getopt_long(argc, argv, optstr, options, nullptr) :
                 getopt(argc, argv, optstr)) != -1) {
     bool is_short = isascii(c);
+    const struct option_info *incompatible_option = nullptr;
 
     /* Look up option definition */
     for (optdef = options_info;
-         optdef - options_info < max_options && c != (is_short ? optdef->short_name : optdef->option);
-         optdef++);
+         optdef - options_info < max_options;
+         optdef++) {
+
+      if (c == (is_short ? optdef->short_name : optdef->option)) {
+        if ((optdef->compat_level & compat) == 0) {
+          /* Tentatively found an incompatible option but there may be
+           * another one that is compatible later in the list. */
+          incompatible_option = optdef;
+        } else {
+          incompatible_option = nullptr;
+          break;
+        }
+      }
+    }
 
     /* Handle option */
     if (optdef - options_info == max_options) {
-        opt.error = true;
-    } else if ((optdef->compat_level & compat) == 0) {
+      if ((optdef = incompatible_option)) {
         char short_name[2] = { optdef->short_name, 0};
         fprintf(stderr, "illegal option (%s) at this compat level\n",
                 optdef->long_name ? optdef->long_name : short_name);
-        opt.error = true;
+      }
+      opt.error = true;
     } else {
       handle_option(&compat, optdef);
     }
@@ -424,7 +457,6 @@ int options_parse(int argc, char *argv[]) {
       opt.error = true;
       break;
     }
-    optarg = argv[optind++];
 
     /* Look up option definition */
     for (optdef = options_info;
@@ -432,6 +464,8 @@ int options_parse(int argc, char *argv[]) {
          optdef++);
     assert(optdef);
 
+    if (optdef->has_arg != no_argument)
+      optarg = argv[optind++];
     handle_option(&compat, optdef);
   }
   return optind;

@@ -20,10 +20,14 @@
 #include "usrgrp.h"
 
 enum compat_level {
-  COMPAT_CHPST     = 001,
-  COMPAT_XCHPST    = 002,
-  COMPAT_SOFTLIMIT = 004,
-  COMPAT_ENVDIR    = 010,
+  COMPAT_CHPST     = 0001,
+  COMPAT_XCHPST    = 0002,
+  COMPAT_SOFTLIMIT = 0004,
+  COMPAT_ENVDIR    = 0010,
+  COMPAT_PGRPHACK  = 0020,
+  COMPAT_SETUIDGID = 0040,
+  COMPAT_ENVUIDGID = 0100,
+  COMPAT_SETLOCK   = 0200,
 };
 
 enum verbosity {
@@ -39,6 +43,8 @@ constexpr enum compat_level C_0 = COMPAT_CHPST;
 constexpr enum compat_level C_S = COMPAT_SOFTLIMIT;
 constexpr enum compat_level C_RS = C_R | C_S;
 constexpr enum compat_level C_XS = C_X | C_S;
+
+constexpr enum compat_level C_L = COMPAT_SETLOCK;
 
 enum opt:int {
   OPT_SETUIDGID = 0x1000,
@@ -79,6 +85,10 @@ enum opt:int {
   OPT_RO_SYS,
   OPT_CAPBS_KEEP,
   OPT_CAPBS_DROP,
+  OPT_LOCKOPT_WAIT,
+  OPT_LOCKOPT_TRY,
+  OPT_LOCKOPT_NOISY,
+  OPT_LOCKOPT_QUIET,
 };
 static_assert(STDIN_FILENO == 0);
 
@@ -137,6 +147,8 @@ struct options {
   bool setuidgid;
   bool envuidgid;
   bool lock_wait;
+  bool lock_nowait_override;
+  bool lock_quiet;
   bool new_session;
   const char *lock_file;
   const char *env_dir;
