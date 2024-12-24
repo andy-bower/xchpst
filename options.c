@@ -45,7 +45,7 @@ const struct option_info options_info[] = {
   { C_RS,OPT_RLIMIT_CPU,  't',  nullptr,       required_argument, "set soft RLIMIT_CPU", "SECONDS" },
   { C_R, OPT_VERBOSE,     'v',  "verbose",     no_argument,       "be verbose" },
   { C_R, OPT_VERSION,     'V',  "version",     no_argument,       "show " NAME_STR " version" },
-  { 0,   OPT_PGRPHACK,    'P',  nullptr,       no_argument,       "run in new process group" },
+  { C_R, OPT_PGRPHACK,    'P',  nullptr,       no_argument,       "run in new process group" },
   { C_R, OPT_CLOSE_STDIN, '0',  nullptr,       no_argument,       "close stdin" },
   { C_R, OPT_CLOSE_STDOUT,'1',  nullptr,       no_argument,       "close stdout" },
   { C_R, OPT_CLOSE_STDERR,'2',  nullptr,       no_argument,       "close stderr" },
@@ -358,16 +358,20 @@ int options_parse(int argc, char *argv[]) {
        if (!(opt.rlimit_core.soft_specified = parse_limit(&opt.rlimit_core.limits.rlim_cur, optarg)))
           opt.error = true;
         break;
+      case OPT_PGRPHACK:
+          opt.new_session = true;
+        break;
       case OPT_CLOSE_STDIN:
       case OPT_CLOSE_STDOUT:
       case OPT_CLOSE_STDERR:
         opt.close_fds |= 1 << (optdef->option - OPT_CLOSE_STDIN);
         break;
-      case OPT_PGRPHACK:
+/*
         fprintf(stderr, "-%c%s not yet implemented\n",
                         optdef->long_name ? '-' : optdef->short_name,
                         optdef->long_name ? optdef->long_name : "");
         opt.error = true;
+ */
       }
     }
   }

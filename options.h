@@ -133,6 +133,7 @@ struct options {
   bool setuidgid;
   bool envuidgid;
   bool lock_wait;
+  bool new_session;
   const char *lock_file;
   const char *env_dir;
   const char *chroot;
