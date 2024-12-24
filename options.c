@@ -48,7 +48,7 @@ const struct option_info options_info[] = {
   { C_RS,OPT_RLIMIT_CORE, 'c',  nullptr,       required_argument, "set soft RLIMIT_CORE", "BYTES" },
   { C_XS,OPT_RLIMIT_RSS,  'r',  nullptr,       required_argument, "set soft RLIMIT_RSS", "BYTES" },
   { C_RS,OPT_RLIMIT_CPU,  't',  nullptr,       required_argument, "set soft RLIMIT_CPU", "SECONDS" },
-  { C_R, OPT_VERBOSE,     'v',  "verbose",     no_argument,       "be verbose" },
+  { C_ALL,OPT_VERBOSE,    'v',  "verbose",     no_argument,       "be verbose" },
   { C_R, OPT_VERSION,     'V',  "version",     no_argument,       "show " NAME_STR " version" },
   { C_R, OPT_PGRPHACK,    'P',  nullptr,       no_argument,       "run in new process group" },
   { C_R, OPT_CLOSE_STDIN, '0',  nullptr,       no_argument,       "close stdin" },

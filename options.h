@@ -46,6 +46,8 @@ constexpr enum compat_level C_XS = C_X | C_S;
 
 constexpr enum compat_level C_L = COMPAT_SETLOCK;
 
+constexpr enum compat_level C_ALL = 0377;
+
 enum opt:int {
   OPT_SETUIDGID = 0x1000,
   OPT_ENVUIDGID,
