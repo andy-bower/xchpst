@@ -1,0 +1,276 @@
+.Dd December 25, 2024
+.Dt xchpst 8
+.Os
+.Sh NAME
+.Nm xchpst
+.Nd eXtended CHange Process STate
+.Sh SYNOPSIS
+.Nm
+.Fl -help
+.Nm
+.Fl -version
+.Nm
+.Fl -exit Ns Op = Ns Ar retcode
+.Nm
+.Op Ar OPTIONS
+.Op Fl -
+.Pa command Ar ...
+.Sh DESCRIPTION
+The
+.Nm
+utility changes process state according to the supplied options and then
+calls
+.Fn exec
+on a named executable with its following arguments.
+.Pp
+.Nm
+is a backwards-compatible extension to the
+.Xr chpst 8
+tool which is supplied with runit.
+.Nm
+enables runit service scripts to take advantage of hardening
+capabilities available with recent Linux kernels such as namespaces
+and capabilities.
+.Nm
+can set up shadow subtrees within the filesystem hierarchy to isolate
+long-running services from parts of the system to which they ought to
+need no access, e.g. with private
+.Pa /tmp
+areas and read-only
+.Pa /usr.
+.Ss Extended xchpst options
+The extra options provided by
+.Nm
+are as follows:
+.Bl -tag -width mmmbytes
+.It Fl -help
+Show help text and usage.
+.It Fl -exit Ns Op = Ns Ar retcode
+Exit immediately with exit status 0, or
+.Ar retcode
+if specified.
+.It Fl -mount-ns
+Create new mount namespace.
+Various other options also implicitly enable mount namespaces as this
+is important to their operation; this option is rarely likely to be
+needed to be specified explicitly.
+.It Fl -net-ns
+Create new network namespace. This will more or less isolate the
+process from the networking subsystem.
+.It Fl -user-ns
+Create a user namespace.
+.It Fl -adopt-net Pa path
+Adopt the network namespace bound to
+.Pa path .
+The binding will be deleted from the filesystem meaning that the
+namespace will disappear when the process exits, if there is no other
+reference to it. This allows the calling script to set up a suitable
+networking environment for the process and hand it over.
+.It Fl -private-run
+Mount an isolated
+.Pa /run
+directory for the process.
+.It Fl -private-tmp
+Mount an isolated
+.Pa /tmp
+directory for the process.
+.It Fl -ro-sys
+Create a read-only filesystem hierarchy.
+Converts
+.Pa /usr
+and
+.Pa /boot
+into read-only mounts.
+.It Fl -cap-bs-keep Ar capability Ns Op ,capability Ns ...
+Keeps only the listed capabilities in the bounding set.
+.It Fl -cap-bs-drop Ar capability Ns Op ,capability Ns ...
+Drops the listed capabilities from the bounding set.
+Use only one of the two options governing the bounding set.
+.It Fl s Ar bytes
+Set soft limit for stack segment size.
+.It Fl a Ar bytes
+Set soft limit for address space size.
+.It Fl -memlock Ar bytes
+Set soft limit for amount of locked memory.
+.It Fl @
+Switches to chpst-compatible option handling only for the remaining
+options. This is to support scripts that can convert an
+.Nm
+invocation into a command line for
+.Nm chpst
+if
+.Nm
+is not present on the system.
+.El
+.Ss chpst-compatible options
+The options compatible with classic
+.Nm chpst
+are as follows:
+.Bl -tag -width mmmbytes
+.It Fl u Ar user Ns Oo Ar :group Ns Oc Ns ...
+Set uid, gid and supplementary groups. Prepend the argument with a colon
+for numerical inputs rather than names to be looked up. If no group is
+specified then the specified user's group is used. There is no space
+within the argument.
+.It Fl U Ar user Ns Oo Ar :group Ns Oc
+Like
+.Fl u
+but the environment variables
+.Ev UID
+and
+.Ev GID
+are set instead of changing
+the user. Supplementary groups are ignored.
+.It Fl b Ar argv0
+Set
+.Va argv[0]
+to
+.Va argv0
+instead of the target executable path when launching the
+program.
+.It Fl e Pa dir
+Populate environment.
+For every file within
+.Pa dir ,
+the filename represents an environment
+variable that will be set or unset.
+The first line of the corresponding files is the content to be set,
+with NUL characters replaced by LF and trailing whitespace removed.
+If the file is 0 bytes long then the variable is unset.
+(So a file with just a newline results in the variable being set with
+an empty value.)
+.It Fl / Pa dir
+Run in a chroot.
+Change to the
+.Pa dir
+directory and make it the new root.
+.It Fl C Pa dir
+Change directory.
+Change to the
+.Pa dir
+directory (after any chroot setting is applied).
+.It Fl n Ar inc
+Increase niceness by
+.Ar inc ,
+which can be negative, resulting in the
+process taking a higher priority.
+.It Fl l Pa file
+Wait for lock. Take a lock out on
+.Pa file
+and wait to obtain it before
+proceding to
+.Fn exec .
+.It Fl L Pa file
+Try to obtain lock; bail out if it can't be obtained.
+.It Fl m Ar bytes
+Set soft limit for data and stack segments and virtual memory size
+and locked memory.
+.It Fl d Ar bytes
+Set soft limit for data segment size.
+.It Fl o Ar files
+Set soft limit for the number of open files.
+.It Fl p Ar procs
+Set soft limit for the number of processes for this user.
+.It Fl f Ar bytes
+Set soft limit for the size of file that this process may create.
+.It Fl c Ar bytes
+Set soft limit for the size of core this process may dump.
+.It Fl t Ar seconds
+Set soft limit for the amount of CPU time this process may consume.
+.It Fl v
+Be verbose. This option may be repeated for increased verbosity to support debugging.
+.It Fl V
+Show
+.Nm
+version number.
+.It Fl P
+Make this process the process group leader, allocating a new session idea.
+.It Fl 0
+Close stdin.
+.It Fl 1
+Close stout.
+.It Fl 2
+Close stderr.
+.El
+.Ss Emulating ancestor tools
+When invoked as
+.Nm chpst ,
+.Nm envdir ,
+.Nm envuidgid ,
+.Nm pgrphack ,
+.Nm setlock ,
+.Nm setuidgid ,
+or
+.Nm softlimit ,
+the
+.Nm
+executable emulates the corresponding tools from the
+.Dq runit
+or
+.Dq daemontools
+packages respectively.
+As an additional feature, all these tools when so invoked, accept the
+.Fl v
+option to increase verbosity.
+.Sh EXIT STATUS
+.Bl -tag -width Ds
+.It 0 
+The default exit status when
+.Fl -exit
+is specified is 0. This can be used for a quick test that
+.Nm
+is available on the system in shell scripts.
+.It 100
+The return code when an invalid option or option argument is specified,
+including if a username cannot be resolved, for example.
+.It 111
+When the requested process state cannot be changed.
+.It other
+The
+.Fl -exit
+option takes an optional argument with a return code to use.
+.El
+.Pp
+If there is no error and the intended application is
+.Fn exec Ns 'd,
+the exit status will be that of the application, not
+.Nm .
+.Sh EXAMPLES
+Testing the emulation of
+.Sq envdir :
+.Dl xchpst -b envdir -- xchpst
+.Pp
+Launch with read-only filesystem if
+.Nm
+is available, else use
+.Nm chpst :
+.Dl xchpst --exit && exec xchpst --ro-sys -l /var/lock/ntpsec-ntpdate ntpd; exec chpst -l /var/log/ntpsec-ntpdate ntpd
+.Pp
+Drop a capability from the bounding set:
+.Dl xchpst --cap-bs-drop CAP_SYS_ADMIN -- acmed
+.Sh SEE ALSO
+.Xr chpst 8 ,
+.Xr runit 8
+.Sh HISTORY
+.Nm
+version 0.x has an unstable interface for initial feature development.
+.Pp
+.Nm
+was written from scratch to be backwards compatible with
+.Nm chpst .
+The extent of the planned extensions dwarfing the
+complexity of the original options led to the decision to write a new tool
+rather than extending the existing one.
+The new
+.Nm
+tool is targeted at new versions of Linux distributions so is written with
+a recent tooling and kernel baseline.
+.Sh AUTHORS
+.An -nosplit
+.An Andrew Bower Aq Mt andrew@bower.uk
+.Sh BUGS
+The new hardening features are in development and should not yet be
+treated as mature or production-ready. Further features are anticipated.
+.Pp
+Please raise bug reports at:
+.Lk https://github.com/andy-bower/xchpst/issues
