@@ -487,7 +487,7 @@ int main(int argc, char *argv[]) {
 
     /* TODO - might need to do this to retain capabilities needed to effect
      * other changes when also dropping user. */
-    /* rc = prctl(PR_SET_KEEPCAPS, 1); */
+    //rc = prctl(PR_SET_KEEPCAPS, 1);
 
     if (!groups) goto finish;
     for (i = 0; i < opt.users_groups.num_supplemental; i++)
@@ -535,14 +535,15 @@ int main(int argc, char *argv[]) {
 
     if (opt.new_ns & CLONE_NEWNET)
       special_mount("/sys", "sysfs", "sysfs", nullptr);
-    if (opt.new_ns & CLONE_NEWUSER) {
-      setgroups(0, nullptr);
-      write_once("/proc/self/setgroups", "%s", "deny");
-      write_once("/proc/self/gid_map", "%u %u %u", 0, gid, 1);
-      write_once("/proc/self/uid_map", "%u %u %u", 0, uid, 1);
-      setresgid(0, 0, 0);
-      setresuid(0, 0, 0);
-    }
+  }
+  if (opt.new_ns & CLONE_NEWUSER) {
+    rc = prctl(PR_SET_DUMPABLE, 1);
+    setgroups(0, nullptr);
+    write_once("/proc/self/setgroups", "%s", "deny\n");
+    write_once("/proc/self/gid_map", "%u %u %u\n", 0, gid, 1);
+    write_once("/proc/self/uid_map", "%u %u %u\n", 0, uid, 1);
+    setresgid(0, 0, 0);
+    setresuid(0, 0, 0);
   }
 
   if (opt.net_adopt) {
