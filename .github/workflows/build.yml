@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: (c) Copyright 2024 Andrew Bower <andrew@bower.uk>
+
+name: "Quick checks"
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: prep
+        run: sudo apt-get install -y libcap-dev
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: build
+        run: make

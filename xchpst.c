@@ -542,8 +542,9 @@ int main(int argc, char *argv[]) {
     write_once("/proc/self/setgroups", "%s", "deny\n");
     write_once("/proc/self/gid_map", "%u %u %u\n", 0, gid, 1);
     write_once("/proc/self/uid_map", "%u %u %u\n", 0, uid, 1);
-    setresgid(0, 0, 0);
-    setresuid(0, 0, 0);
+    if (setresgid(0, 0, 0) != 0 ||
+        setresuid(0, 0, 0) != 0)
+      fprintf(stderr, "warning: error becoming root in user namespace, %s\n", strerror(errno));
   }
 
   if (opt.net_adopt) {

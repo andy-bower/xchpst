@@ -8,7 +8,7 @@ prefix ?= /usr/local
 CFLAGS ?= -g -O2
 CFLAGS += -MMD -MP \
 	  -Wall -Wimplicit-fallthrough -Werror \
-	  -std=c23 \
+	  -std=c2x \
 	  -D_GNU_SOURCE \
 	  -DPROG_NAME=$(name) \
 	  -DPROG_VERSION=$(VERSION) \
