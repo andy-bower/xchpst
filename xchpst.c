@@ -44,6 +44,11 @@ const struct app apps[] = {
 };
 constexpr size_t max_apps = sizeof apps / (sizeof *apps);
 
+static struct {
+  char uid[16];
+  char gid[16];
+} extra_env;
+
 static void version(FILE *out) {
   fprintf(out,
           "xchpst-%s (c) Copyright 2024, Andrew Bower <andrew@bower.uk>\n",
@@ -279,7 +284,6 @@ int main(int argc, char *argv[]) {
   int lock_fd = -1;
   uid_t uid;
   gid_t gid;
-  char *s;
   int fd;
   int i;
 
@@ -366,26 +370,24 @@ int main(int argc, char *argv[]) {
   if (opt.env_dir && !read_env_dir(opt.env_dir))
     goto finish;
 
-  if (opt.envuidgid && usrgrp_specified(&opt.env_users_groups.user)) {
-    s = nullptr;
-    if ((rc = usrgrp_uid_to_text(&s, &opt.env_users_groups.user))) {
-      perror("formatting UID");
-      goto finish;
+  if (opt.envuidgid) {
+    struct sys_entry *entry;
+    if ((entry = &opt.env_users_groups.user)->resolved) {
+      rc = snprintf(extra_env.uid, sizeof extra_env.uid, "UID=%d", entry->uid);
+      if (rc == -1 || rc == sizeof extra_env.uid) {
+        perror("creating UID env");
+        goto finish;
+      }
+      putenv(extra_env.uid);
     }
-    if (setenv("UID", s, 1) == -1)
-      perror("setting UID");
-    free(s);
-  }
-
-  if (opt.envuidgid && usrgrp_specified(&opt.env_users_groups.group)) {
-    s = nullptr;
-    if ((rc = usrgrp_gid_to_text(&s, &opt.env_users_groups.group))) {
-      perror("formatting GID");
-      goto finish;
+    if ((entry = &opt.env_users_groups.group)->resolved) {
+      rc = snprintf(extra_env.gid, sizeof extra_env.gid, "GID=%d", entry->gid);
+      if (rc == -1 || rc == sizeof extra_env.uid) {
+        perror("creating UID env");
+        goto finish;
+      }
+      putenv(extra_env.gid);
     }
-    if (setenv("GID", s, 1) == -1)
-      perror("setting GID");
-    free(s);
   }
 
   if (opt.chroot) {

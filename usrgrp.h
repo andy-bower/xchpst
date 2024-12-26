@@ -40,7 +40,5 @@ int usrgrp_parse(struct users_groups *ug, const char *arg);
 int usrgrp_resolve(struct users_groups *ug);
 void usrgrp_print(FILE *out, const char *what, struct users_groups *ug);
 void usrgrp_free(struct users_groups *ug);
-int usrgrp_uid_to_text(char **s, const struct sys_entry *entry);
-int usrgrp_gid_to_text(char **s, const struct sys_entry *entry);
 
 #endif

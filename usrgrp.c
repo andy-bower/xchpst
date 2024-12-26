@@ -95,7 +95,7 @@ static int resolve_user(struct sys_entry *entry) {
       rc = ENOENT;
       if (errno != 0) {
         rc = errno;
-        fprintf(stderr, "getpwnam(\"%s\": %s\n", entry->tok, strerror(rc));
+        fprintf(stderr, "getpwnam(\"%s\"): %s\n", entry->tok, strerror(rc));
       }
       entry->uid = (uid_t) -1;
       entry->user_gid = (gid_t) -1;
@@ -123,7 +123,9 @@ static int resolve_user(struct sys_entry *entry) {
 
 static int resolve_group(struct sys_entry *entry) {
   struct group *group;
+  size_t toks;
   int rc = 0;
+  long nid;
 
   switch (entry->tok_type) {
   case TOK_NONE:
@@ -147,7 +149,13 @@ static int resolve_group(struct sys_entry *entry) {
     }
     break;
   case TOK_ID:
-    entry->resolved = true;
+    toks = sscanf(entry->tok, "%ld", &nid);
+    if (toks == 1) {
+      entry->gid = nid;
+      entry->resolved = true;
+    } else {
+      entry->resolved = false;
+    }
   }
 
   return rc;
@@ -180,24 +188,6 @@ static void print_group(FILE *out, struct sys_entry *entry) {
           entry->gid,
           tok_type_name(entry->tok_type),
           entry->resolved ? "RESOLVED" : "");
-}
-
-int usrgrp_uid_to_text(char **s, const struct sys_entry *entry) {
-  if (!entry->resolved)
-    return ENOENT;
-  else if (asprintf(s, "%d", entry->uid) == -1)
-    return errno;
-  else
-    return 0;
-}
-
-int usrgrp_gid_to_text(char **s, const struct sys_entry *entry) {
-  if (!entry->resolved)
-    return ENOENT;
-  else if (asprintf(s, "%d", entry->gid) == -1)
-    return errno;
-  else
-    return 0;
 }
 
 void usrgrp_print(FILE *out, const char *what, struct users_groups *ug) {
