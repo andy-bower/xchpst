@@ -265,6 +265,16 @@ The new
 .Nm
 tool is targeted at new versions of Linux distributions so is written with
 a recent tooling and kernel baseline.
+.Pp
+.Nm
+has different design principles from
+.Nm chpst .
+Use
+.Nm
+if you need the additional options to harden runit-supervised tasks;
+Use
+.Nm chpst
+if you do not need them, for a minimal footprint.
 .Sh AUTHORS
 .An -nosplit
 .An Andrew Bower Aq Mt andrew@bower.uk
