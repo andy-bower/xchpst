@@ -72,6 +72,7 @@ const struct option_info options_info[] = {
     "restrict capabilities bounding set", "CAP[,...]" },
   { C_X, OPT_CAPBS_DROP,  '\0', "cap-bs-drop", required_argument,
     "drop from capabilities bounding set", "CAP[,...]" },
+  { C_X, OPT_FORK_JOIN,   '\0', "fork-join",   no_argument,       "fork and wait for process" },
 };
 constexpr size_t max_options = sizeof options_info / (sizeof *options_info);
 
@@ -328,6 +329,9 @@ static void handle_option(enum compat_level *compat,
     if (!parse_caps(&opt.cap_bounds, optarg))
       opt.error = true;
     opt.cap_op = CAP_OP_DROP;
+    break;
+  case OPT_FORK_JOIN:
+    opt.fork_join = true;
     break;
   case OPT_SETUIDGID:
     if (usrgrp_parse(&opt.users_groups, optarg))

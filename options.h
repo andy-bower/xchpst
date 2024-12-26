@@ -92,6 +92,7 @@ enum opt:int {
   OPT_RO_SYS,
   OPT_CAPBS_KEEP,
   OPT_CAPBS_DROP,
+  OPT_FORK_JOIN,
 };
 static_assert(STDIN_FILENO == 0);
 
@@ -153,6 +154,7 @@ struct options {
   bool lock_nowait_override;
   bool lock_quiet;
   bool new_session;
+  bool fork_join;
   const char *lock_file;
   const char *env_dir;
   const char *chroot;

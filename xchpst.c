@@ -4,6 +4,7 @@
 /* xchpst: eXtended Change Process State
  * A tool that is backwards compatible with chpst(8) from runit(8),
  * offering additional options to harden process with namespace isolation
+  fprintf(out, "\nusage: %s OPTIONS [--]",
  * and more. */
 
 #include <assert.h>
@@ -13,7 +14,9 @@
 #include <getopt.h>
 #include <grp.h>
 #include <errno.h>
+#include <poll.h>
 #include <sched.h>
+#include <signal.h>
 #include <stdarg.h>
 #include <stdbit.h>
 #include <stdint.h>
@@ -25,7 +28,10 @@
 #include <sys/file.h>
 #include <sys/mount.h>
 #include <sys/stat.h>
+#include <sys/pidfd.h>
 #include <sys/prctl.h>
+#include <sys/signalfd.h>
+#include <sys/wait.h>
 
 #include "xchpst.h"
 #include "options.h"
@@ -275,9 +281,12 @@ fail:
 }
 
 int main(int argc, char *argv[]) {
+  sigset_t newmask;
+  sigset_t oldmask;
   char **sub_argv;
   char *executable;
   int sub_argc;
+  pid_t child;
   int optind;
   int rc = 0;
   int ret = CHPST_ERROR_CHANGING_STATE;
@@ -567,12 +576,113 @@ int main(int argc, char *argv[]) {
   for (unsigned int close_fds = opt.close_fds; close_fds; close_fds &= ~(1 << fd))
     close(fd = stdc_trailing_zeros(close_fds));
 
+  if (opt.fork_join) {
+    /* Save old signal mask for re-use by child and block all signals
+     * in the parent so we can get them delivered by signalfd. */
+    sigfillset(&newmask);
+    sigdelset(&newmask, SIGCHLD);
+    sigdelset(&newmask, SIGBUS);
+    sigdelset(&newmask, SIGFPE);
+    sigdelset(&newmask, SIGILL);
+    sigdelset(&newmask, SIGSEGV);
+    rc = sigprocmask(SIG_SETMASK, &newmask, &oldmask);
+    if (rc == -1) {
+      perror("setting up mask for signalfds");
+      goto finish;
+    }
+
+    child = fork();
+    if (child == -1) {
+      perror("fork");
+      goto finish;
+    } else if (child != 0) {
+      goto join;
+    } else {
+      if (sigprocmask(SIG_SETMASK, &oldmask, nullptr) == -1)
+        perror("warning: could not restore signal mask in child");
+    }
+  }
+
   /* Launch the target */
   rc = execvp(executable, sub_argv);
 
   /* Handle errors launching */
   assert(rc == -1);
   perror(NAME_STR ": execvp");
+
+join:
+  if (opt.fork_join && child != 0) {
+    enum { my_pidfd = 0, my_signalfd = 1 };
+    struct signalfd_siginfo siginf;
+    bool emergency_break = false;
+    siginfo_t pidinf;
+    int ready;
+    int sfd;
+    int pidfd;
+
+    pidfd = pidfd_open(child, PIDFD_NONBLOCK);
+    if (pidfd == -1) {
+      perror("error setting up child supervision");
+      kill(child, SIGKILL);
+      goto finish;
+    }
+
+    sfd = signalfd(-1, &newmask, SFD_NONBLOCK);
+    if (sfd == -1) {
+      close(pidfd);
+      perror("error setting up signal proxy");
+      pidfd_send_signal(pidfd, SIGKILL, nullptr, 0);
+      goto finish;
+    }
+
+    struct pollfd pollset[2] = {
+      [my_pidfd] = { .fd = pidfd, .events = POLLIN },
+      [my_signalfd] = { .fd = sfd, .events = POLLIN },
+    };
+
+    while(true) {
+      ready = poll(pollset, 2, -1);
+      if (ready == -1 && errno != EINTR) {
+        perror("poll");
+      } else if (ready != 0) {
+        if (pollset[my_pidfd].revents & POLLIN) {
+          pidinf.si_pid = 0;
+          pidinf.si_signo = 0;
+          rc = waitid(P_PIDFD, pidfd, &pidinf, WEXITED | WNOHANG);
+          if (rc == -1)
+            perror("waitid");
+          else if (rc == 0 && pidinf.si_signo == SIGCHLD && pidinf.si_pid == child) {
+            if (pidinf.si_code == CLD_KILLED || pidinf.si_code == CLD_DUMPED) {
+              if (is_verbose())
+                fprintf(stderr, "child killed by signal %d\n", pidinf.si_status);
+              ret = 128 + pidinf.si_status;
+            } else if (pidinf.si_code == CLD_EXITED) {
+              ret = pidinf.si_code;
+            }
+            break;
+          }
+          else
+            fprintf(stderr, "got SIGCHLD from someone else's child (%d)!\n", pidinf.si_pid);
+        } else if (pollset[my_signalfd].revents & POLLIN) {
+          rc = read(sfd, &siginf, sizeof siginf);
+          if (rc != sizeof siginf) {
+            perror("read signalfd");
+            break;
+          }
+          if (is_verbose())
+            fprintf(stderr, "passing on signal %d to child\n", siginf.ssi_signo);
+          pidfd_send_signal(pidfd, siginf.ssi_signo, nullptr, 0);
+        }
+      }
+    }
+
+    if (emergency_break)
+      kill(child, SIGKILL);
+
+    close(sfd);
+    close(pidfd);
+    sigprocmask(SIG_SETMASK, &oldmask, nullptr);
+  }
 
 finish:
   if (lock_fd != -1)
