@@ -308,6 +308,13 @@ int main(int argc, char *argv[]) {
   if (is_verbose())
     fprintf(stderr, "invoked as %s(%s)\n", opt.app->name, program_invocation_short_name);
 
+  if (!opt.fork_join &&
+      (opt.new_ns & CLONE_NEWPID)) {
+    if (is_verbose())
+      fprintf(stderr, "also going to do fork-join since new PID namspace requested\n");
+    opt.fork_join = true;
+  }
+
   if (!(opt.new_ns & CLONE_NEWNS) &&
       (opt.new_ns || opt.private_run || opt.private_tmp || opt.ro_sys)) {
     if (is_verbose())
@@ -528,8 +535,6 @@ int main(int argc, char *argv[]) {
 
     if (opt.new_ns & CLONE_NEWNET)
       special_mount("/sys", "sysfs", "sysfs", nullptr);
-    if (opt.new_ns & CLONE_NEWPID)
-      special_mount("/proc", "proc", "procfs", nullptr);
     if (opt.new_ns & CLONE_NEWUSER) {
       setgroups(0, nullptr);
       write_once("/proc/self/setgroups", "%s", "deny");
@@ -602,6 +607,9 @@ int main(int argc, char *argv[]) {
         perror("warning: could not restore signal mask in child");
     }
   }
+
+  if (opt.new_ns & CLONE_NEWPID)
+    special_mount("/proc", "proc", "procfs", nullptr);
 
   /* Launch the target */
   rc = execvp(executable, sub_argv);

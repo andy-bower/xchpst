@@ -62,7 +62,7 @@ const struct option_info options_info[] = {
   { C_X, OPT_MOUNT_NS,    '\0', "mount-ns",    no_argument,       "create mount namespace" },
   { C_X, OPT_NET_NS,      '\0', "net-ns",      no_argument,       "create net namespace" },
   { C_X, OPT_USER_NS,     '\0', "user-ns",     no_argument,       "create user namespace" },
-  { 0  , OPT_PID_NS,      '\0', "pid-ns",      no_argument,       "create pid namespace" },
+  { C_X, OPT_PID_NS,      '\0', "pid-ns",      no_argument,       "create pid namespace" },
   { C_X, OPT_NET_ADOPT,   '\0', "adopt-net",   required_argument,
     "adopt net namespace", "NS-PATH" },
   { C_X, OPT_PRIVATE_RUN, '\0', "private-run", no_argument,       "create private run dir" },
