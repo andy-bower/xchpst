@@ -292,7 +292,8 @@ int main(int argc, char *argv[]) {
        opt.app - apps < max_apps && strcmp(program_invocation_short_name, opt.app->name);
        opt.app++);
 
-  options_init();
+  if (!options_init())
+    return CHPST_ERROR_OPTIONS;
   optind = options_parse(argc, argv);
 
   if (is_verbose())

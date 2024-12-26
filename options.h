@@ -185,7 +185,7 @@ static inline bool is_debug(void) {
   return opt.verbosity >= LOG_LEVEL_DEBUG;
 }
 
-void options_init(void);
+bool options_init(void);
 void options_print(FILE *out);
 void options_print_positional(FILE *out);
 void options_explain_positional(FILE *out);

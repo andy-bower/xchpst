@@ -76,7 +76,7 @@ const struct option_info options_info[] = {
 constexpr size_t max_options = sizeof options_info / (sizeof *options_info);
 
 static struct option options[max_options + 1];
-static char *optstr;
+static char optstr[max_options * 2];
 
 void options_print(FILE *out) {
   const struct option_info *optdef;
@@ -136,7 +136,7 @@ void options_explain_positional(FILE *out) {
   }
 }
 
-void options_init(void) {
+bool options_init(void) {
   const struct option_info *optdef;
   size_t optstr_sz = 1;
   size_t optstr_len;
@@ -173,9 +173,9 @@ void options_init(void) {
   }
 
   /* Populate short option string */
-  if (!(optstr = malloc(optstr_sz + 1))) {
-    perror("malloc: creating option string");
-    return;
+  if (optstr_sz + 1 > sizeof optstr) {
+    fprintf(stderr, "short option string too long\n");
+    return false;
   }
   optstr_len = 0;
   optstr[optstr_len++] = '+'; /* Stop accepting options after prog name */
@@ -194,6 +194,7 @@ void options_init(void) {
   }
   assert(optstr_len == optstr_sz);
   optstr[optstr_len++] = '\0';
+  return true;
 }
 
 bool parse_limit(rlim_t *lim, const char *arg) {
@@ -476,8 +477,6 @@ int options_parse(int argc, char *argv[]) {
 }
 
 void options_free(void) {
-  if (optstr)
-    free(optstr);
   usrgrp_free(&opt.users_groups);
   usrgrp_free(&opt.env_users_groups);
 }
