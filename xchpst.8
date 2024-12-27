@@ -267,6 +267,9 @@ is available, else use
 .Pp
 Drop a capability from the bounding set:
 .Dl xchpst --cap-bs-drop CAP_SYS_ADMIN -- acmed
+.Pp
+Drop user while retaining some capabilities:
+.Dl xchpst -u :500:500 --caps-keep CAP_DAC_OVERRIDE fakeroot /usr/sbin/gpm -D -m /dev/input/mice -t exps2
 .Sh SEE ALSO
 .Xr chpst 8 ,
 .Xr runit 8

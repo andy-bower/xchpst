@@ -8,7 +8,6 @@
 
 #include <assert.h>
 #include <ctype.h>
-#include <dirent.h>
 #include <fcntl.h>
 #include <getopt.h>
 #include <grp.h>
@@ -34,6 +33,7 @@
 
 #include "xchpst.h"
 #include "caps.h"
+#include "env.h"
 #include "options.h"
 
 static const char *version_str = STRINGIFY(PROG_VERSION);
@@ -190,96 +190,6 @@ void set_resource_limits(void) {
   set_rlimit(RLIMIT_CPU, &opt.rlimit_cpu);
 }
 
-bool read_env_dir(const char *dir_name) {
-  int dir1 = -1;
-  int dir2 = -1;
-  int file = -1;
-  DIR *dir = nullptr;
-  const char *entity;
-  const struct dirent *de;
-  bool success = false;
-  struct stat statbuf;
-  char *data = nullptr;
-  size_t data_sz = 0;
-  size_t buffered;
-  size_t end;
-  ssize_t ptr;
-  int rc;
-
-  if ((dir1 = open(entity = dir_name, O_RDONLY | O_DIRECTORY)) == -1)
-    goto fail;
-  if ((dir2 = openat(dir1, "./", O_RDONLY | O_DIRECTORY)) == -1)
-    goto fail;
-  if ((dir = fdopendir(dir1)) == nullptr)
-    goto fail;
-
-  for (errno = 0; (de = readdir(dir));) {
-    if (de->d_type == DT_DIR)
-      continue;
-    if ((file = openat(dir2, entity = de->d_name, O_RDONLY)) == -1)
-      goto fail;
-    if ((rc = fstat(file, &statbuf)) == -1)
-      goto fail;
-    if (statbuf.st_size > data_sz) {
-      data_sz = statbuf.st_size;
-      free(data);
-      data = malloc(data_sz + 1);
-      if (data == nullptr)
-        goto fail;
-    }
-
-    for (ptr = 0, buffered = 0, end = statbuf.st_size; ptr < end; ptr++) {
-      /* Slurp chunks of data */
-      if (ptr == buffered) {
-        if ((rc = read(file, data + ptr, end - ptr)) == -1)
-          goto fail;
-        else
-          buffered += rc;
-      }
-      /* Terminate at first LF; turn NUL within value into LF */
-      if (data[ptr] == '\n')
-        end = ptr;
-      else if (data[ptr] == '\0')
-        data[ptr] = '\n';
-    }
-    /* Remove trailing whitespace */
-    for (ptr = end - 1; ptr >= 0; ptr--)
-      if (data[ptr] == ' ' || data[ptr] == '\t')
-        data[ptr] = '\0';
-      else
-        break;
-
-    close(file);
-    file = -1;
-
-    if (statbuf.st_size != 0) {
-      data[end] = '\0';
-      if (is_verbose())
-        fprintf(stderr, "setting %s=%s\n", de->d_name, data);
-      setenv(de->d_name, data, 1);
-    } else {
-      if (is_verbose())
-        fprintf(stderr, "unsetting %s\n", de->d_name);
-      unsetenv(de->d_name);
-    }
-  }
-  success = errno == 0 ? true : false;
-
-fail:
-  if (!success)
-    fprintf(stderr, "error reading environment \"%s\", %s\n", entity, strerror(errno));
-  free(data);
-  if (file != -1)
-    close(file);
-  if (dir != nullptr)
-    closedir(dir);
-  else if (dir1 != -1)
-    close(dir1);
-  if (dir2)
-    close(dir2);
-  return success;
-}
-
 int main(int argc, char *argv[]) {
   sigset_t newmask;
   sigset_t oldmask;
@@ -311,7 +221,7 @@ int main(int argc, char *argv[]) {
   if (!opt.fork_join &&
       (opt.new_ns & CLONE_NEWPID)) {
     if (is_verbose())
-      fprintf(stderr, "also going to do fork-join since new PID namspace requested\n");
+      fprintf(stderr, "also going to do fork-join since new PID namespace requested\n");
     opt.fork_join = true;
   }
 
@@ -553,10 +463,6 @@ int main(int argc, char *argv[]) {
 
   set_resource_limits();
 
-  if (opt.caps_op != CAP_OP_NONE)
-    if (!drop_capabilities())
-      goto finish;
-
   if (opt.fork_join) {
     /* Save old signal mask for re-use by child and block all signals
      * in the parent so we can get them delivered by signalfd. */
@@ -586,6 +492,10 @@ int main(int argc, char *argv[]) {
 
   if (opt.new_ns & CLONE_NEWPID)
     special_mount("/proc", "proc", "procfs", nullptr);
+
+  if (opt.caps_op != CAP_OP_NONE)
+    if (!drop_capabilities())
+      goto finish;
 
   for (unsigned int close_fds = opt.close_fds; close_fds; close_fds &= ~(1 << fd))
     close(fd = stdc_trailing_zeros(close_fds));
