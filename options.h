@@ -92,6 +92,8 @@ enum opt:int {
   OPT_RO_SYS,
   OPT_CAPBS_KEEP,
   OPT_CAPBS_DROP,
+  OPT_CAPS_KEEP,
+  OPT_CAPS_DROP,
   OPT_FORK_JOIN,
 };
 static_assert(STDIN_FILENO == 0);
@@ -173,8 +175,10 @@ struct options {
   struct limit rlimit_core;
   struct limit rlimit_cpu;
   unsigned close_fds;
-  enum cap_op cap_op;
+  enum cap_op cap_bounds_op;
   cap_bits_t cap_bounds;
+  cap_bits_t caps_op;
+  cap_bits_t caps;
 };
 
 extern struct options opt;

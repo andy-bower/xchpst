@@ -94,11 +94,17 @@ Converts
 and
 .Pa /boot
 into read-only mounts.
-.It Fl -cap-bs-keep Ar capability Ns Op ,capability Ns ...
+.It Fl -caps-bs-keep Ar capability Ns Op ,capability Ns ...
 Keeps only the listed capabilities in the bounding set.
-.It Fl -cap-bs-drop Ar capability Ns Op ,capability Ns ...
+.It Fl -caps-bs-drop Ar capability Ns Op ,capability Ns ...
 Drops the listed capabilities from the bounding set.
 Use only one of the two options governing the bounding set.
+.It Fl -caps-keep Ar capability Ns Op ,capability Ns ...
+Retain the listed capabilities when dropping to a non-root
+user.
+.It Fl -caps-drop Ar capability Ns Op ,capability Ns ...
+Drop the listed capabilities when dropping to a non-root
+user, but retain all others.
 .It Fl s Ar bytes
 Set soft limit for stack segment size.
 .It Fl a Ar bytes

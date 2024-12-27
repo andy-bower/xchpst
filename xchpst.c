@@ -4,7 +4,6 @@
 /* xchpst: eXtended Change Process State
  * A tool that is backwards compatible with chpst(8) from runit(8),
  * offering additional options to harden process with namespace isolation
-  fprintf(out, "\nusage: %s OPTIONS [--]",
  * and more. */
 
 #include <assert.h>
@@ -34,6 +33,7 @@
 #include <sys/wait.h>
 
 #include "xchpst.h"
+#include "caps.h"
 #include "options.h"
 
 static const char *version_str = STRINGIFY(PROG_VERSION);
@@ -429,7 +429,7 @@ int main(int argc, char *argv[]) {
       goto finish;
     }
     if (is_verbose())
-      fprintf(stderr, "change dirctory: %s\n", opt.chdir);
+      fprintf(stderr, "change directory: %s\n", opt.chdir);
   }
 
   if (opt.renice) {
@@ -446,38 +446,9 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  if (opt.cap_op == CAP_OP_KEEP) {
-    int i, max = cap_max_bits();
-    cap_bits_t b = 1ull << (max - 1);
-    for (i = max - 1; b; i--, b >>= 1) {
-      if ((opt.cap_bounds & b) == 0 &&
-          cap_get_bound(i) == 1) {
-        if (is_verbose())
-          fprintf(stderr, "dropping capability %s\n", cap_to_name(i));
-        rc = cap_drop_bound(i);
-        if (rc == -1) {
-          perror("cap_drop_bound");
-          goto finish;
-        }
-      } else if (is_debug()) {
-        fprintf(stderr, "keeping capability %s\n", cap_to_name(i));
-      }
-    }
-  } else if (opt.cap_op == CAP_OP_DROP) {
-    int i, max = cap_max_bits();
-    cap_bits_t b = 1ull << (max - 1);
-    for (i = max - 1; b; i--, b >>= 1) {
-      if (opt.cap_bounds & b) {
-        if (is_verbose())
-          fprintf(stderr, "dropping capability %s\n", cap_to_name(i));
-        rc = cap_drop_bound(i);
-        if (rc == -1) {
-          perror("cap_drop_bound");
-          goto finish;
-        }
-      }
-    }
-  }
+  if (opt.cap_bounds_op != CAP_OP_NONE)
+    if (!set_capabilities_bounding_set())
+      goto finish;
 
   if (opt.setuidgid && opt.users_groups.user.resolved) {
     /* You do this backwards: supplemental groups first */
@@ -485,9 +456,11 @@ int main(int argc, char *argv[]) {
     gid_t gid;
     uid_t uid;
 
-    /* TODO - might need to do this to retain capabilities needed to effect
-     * other changes when also dropping user. */
-    //rc = prctl(PR_SET_KEEPCAPS, 1);
+    if (opt.caps_op != CAP_OP_NONE) {
+      /* Postpone the loss of capabilities until after the user switch
+       * and drop them when ready. */
+      rc = prctl(PR_SET_KEEPCAPS, 1);
+    }
 
     if (!groups) goto finish;
     for (i = 0; i < opt.users_groups.num_supplemental; i++)
@@ -580,8 +553,9 @@ int main(int argc, char *argv[]) {
 
   set_resource_limits();
 
-  for (unsigned int close_fds = opt.close_fds; close_fds; close_fds &= ~(1 << fd))
-    close(fd = stdc_trailing_zeros(close_fds));
+  if (opt.caps_op != CAP_OP_NONE)
+    if (!drop_capabilities())
+      goto finish;
 
   if (opt.fork_join) {
     /* Save old signal mask for re-use by child and block all signals
@@ -612,6 +586,9 @@ int main(int argc, char *argv[]) {
 
   if (opt.new_ns & CLONE_NEWPID)
     special_mount("/proc", "proc", "procfs", nullptr);
+
+  for (unsigned int close_fds = opt.close_fds; close_fds; close_fds &= ~(1 << fd))
+    close(fd = stdc_trailing_zeros(close_fds));
 
   /* Launch the target */
   rc = execvp(executable, sub_argv);
