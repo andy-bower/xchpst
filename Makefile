@@ -19,7 +19,7 @@ LN = ln -f
 DEP = $(wildcard *.d)
 prefix ?= /usr
 
-OBJS = xchpst.o options.o usrgrp.o caps.o env.o
+OBJS = xchpst.o options.o usrgrp.o caps.o env.o join.o
 ALT_EXES = chpst softlimit envdir pgrphack setuidgid envuidgid setlock
 
 .PHONY: all clean install

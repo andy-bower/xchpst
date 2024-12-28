@@ -33,6 +33,7 @@
 
 #include "xchpst.h"
 #include "caps.h"
+#include "join.h"
 #include "env.h"
 #include "options.h"
 
@@ -449,6 +450,11 @@ int main(int argc, char *argv[]) {
     if (opt.verbosity > 0) fprintf(stderr, "adopted net ns\n");
   }
 
+  if (opt.new_root) {
+    private_mount("/newroot");
+
+  }
+
   if (opt.private_run)
     private_mount("/run");
 
@@ -508,78 +514,8 @@ int main(int argc, char *argv[]) {
   perror(NAME_STR ": execvp");
 
 join:
-  if (opt.fork_join && child != 0) {
-    enum { my_pidfd = 0, my_signalfd = 1 };
-    struct signalfd_siginfo siginf;
-    bool emergency_break = false;
-    siginfo_t pidinf;
-    int ready;
-    int sfd;
-    int pidfd;
-
-    pidfd = pidfd_open(child, PIDFD_NONBLOCK);
-    if (pidfd == -1) {
-      perror("error setting up child supervision");
-      kill(child, SIGKILL);
-      goto finish;
-    }
-
-    sfd = signalfd(-1, &newmask, SFD_NONBLOCK);
-    if (sfd == -1) {
-      close(pidfd);
-      perror("error setting up signal proxy");
-      pidfd_send_signal(pidfd, SIGKILL, nullptr, 0);
-      goto finish;
-    }
-
-    struct pollfd pollset[2] = {
-      [my_pidfd] = { .fd = pidfd, .events = POLLIN },
-      [my_signalfd] = { .fd = sfd, .events = POLLIN },
-    };
-
-    while(true) {
-      ready = poll(pollset, 2, -1);
-      if (ready == -1 && errno != EINTR) {
-        perror("poll");
-      } else if (ready != 0) {
-        if (pollset[my_pidfd].revents & POLLIN) {
-          pidinf.si_pid = 0;
-          pidinf.si_signo = 0;
-          rc = waitid(P_PIDFD, pidfd, &pidinf, WEXITED | WNOHANG);
-          if (rc == -1)
-            perror("waitid");
-          else if (rc == 0 && pidinf.si_signo == SIGCHLD && pidinf.si_pid == child) {
-            if (pidinf.si_code == CLD_KILLED || pidinf.si_code == CLD_DUMPED) {
-              if (is_verbose())
-                fprintf(stderr, "child killed by signal %d\n", pidinf.si_status);
-              ret = 128 + pidinf.si_status;
-            } else if (pidinf.si_code == CLD_EXITED) {
-              ret = pidinf.si_code;
-            }
-            break;
-          }
-          else
-            fprintf(stderr, "got SIGCHLD from someone else's child (%d)!\n", pidinf.si_pid);
-        } else if (pollset[my_signalfd].revents & POLLIN) {
-          rc = read(sfd, &siginf, sizeof siginf);
-          if (rc != sizeof siginf) {
-            perror("read signalfd");
-            break;
-          }
-          if (is_verbose())
-            fprintf(stderr, "passing on signal %d to child\n", siginf.ssi_signo);
-          pidfd_send_signal(pidfd, siginf.ssi_signo, nullptr, 0);
-        }
-      }
-    }
-
-    if (emergency_break)
-      kill(child, SIGKILL);
-
-    close(sfd);
-    close(pidfd);
-    sigprocmask(SIG_SETMASK, &oldmask, nullptr);
-  }
+  if (opt.fork_join && child != 0)
+    join(child, &newmask, &oldmask, &ret);
 
 finish:
   if (lock_fd != -1)
