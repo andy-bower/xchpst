@@ -96,7 +96,8 @@ static bool bind_root_dirs(const char *new_root) {
       if (rc == -1 || rc >= PATH_MAX - 1)
         goto fail;
       path[rc]='\0';
-      symlink(path, mt->to);
+      if (symlink(path, mt->to) == -1 || is_verbose())
+        fprintf(stderr, "  symlink(%s,%s)=%s\n", path, mt->to, strerror(errno));
       free(path);
       path = nullptr;
     }
