@@ -41,7 +41,7 @@ bool join(pid_t child, sigset_t *mask, sigset_t *oldmask, int *retcode) {
   if (sfd == -1) {
     close(pidfd);
     perror("error setting up signal proxy");
-    pidfd_send_signal(pidfd, SIGKILL, nullptr, 0);
+    pidfd_send_signal(pidfd, SIGKILL, NULL, 0);
     return false;
   }
 
@@ -90,7 +90,7 @@ bool join(pid_t child, sigset_t *mask, sigset_t *oldmask, int *retcode) {
         }
         if (is_verbose())
           fprintf(stderr, "passing on signal %d to child\n", siginf.ssi_signo);
-        pidfd_send_signal(pidfd, siginf.ssi_signo, nullptr, 0);
+        pidfd_send_signal(pidfd, siginf.ssi_signo, NULL, 0);
       }
     }
   }
@@ -100,7 +100,7 @@ bool join(pid_t child, sigset_t *mask, sigset_t *oldmask, int *retcode) {
 
   close(sfd);
   close(pidfd);
-  sigprocmask(SIG_SETMASK, oldmask, nullptr);
+  sigprocmask(SIG_SETMASK, oldmask, NULL);
 
   return true;
 }

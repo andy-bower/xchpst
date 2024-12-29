@@ -4,6 +4,8 @@
 #ifndef _USRGRP_H
 #define _USRGRP_H
 
+#include <stdbool.h>
+
 enum tok_type {
   TOK_NONE = 0,
   TOK_NAME,

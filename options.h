@@ -36,19 +36,19 @@ enum verbosity {
   LOG_LEVEL_DEBUG = 2,
 };
 
-constexpr enum compat_level C_X = COMPAT_XCHPST;
-constexpr enum compat_level C_R = COMPAT_XCHPST | COMPAT_CHPST;
-constexpr enum compat_level C_0 = COMPAT_CHPST;
+static const/*expr*/ enum compat_level C_X = COMPAT_XCHPST;
+static const/*expr*/ enum compat_level C_R = COMPAT_XCHPST | COMPAT_CHPST;
+static const/*expr*/ enum compat_level C_0 = COMPAT_CHPST;
 
-constexpr enum compat_level C_S = COMPAT_SOFTLIMIT;
-constexpr enum compat_level C_RS = C_R | C_S;
-constexpr enum compat_level C_XS = C_X | C_S;
+static const/*expr*/ enum compat_level C_S = COMPAT_SOFTLIMIT;
+static const/*expr*/ enum compat_level C_RS = C_R | C_S;
+static const/*expr*/ enum compat_level C_XS = C_X | C_S;
 
-constexpr enum compat_level C_L = COMPAT_SETLOCK;
+static const/*expr*/ enum compat_level C_L = COMPAT_SETLOCK;
 
-constexpr enum compat_level C_ALL = 0377;
+static const/*expr*/ enum compat_level C_ALL = 0377;
 
-enum opt:int {
+enum opt {
   OPT_SETUIDGID = 0x1000,
   OPT_ENVUIDGID,
   OPT_ARGV0,
@@ -99,13 +99,13 @@ enum opt:int {
 };
 static_assert(STDIN_FILENO == 0);
 
-constexpr int MAX_POSITIONAL_OPTS = 1;
+static const/*expr*/ int MAX_POSITIONAL_OPTS = 1;
 struct app {
   enum compat_level compat_level;
   const char *name;
   bool long_opts;
   int takes_positional_opts;
-  enum opt positional_opts[MAX_POSITIONAL_OPTS];
+  enum opt positional_opts[1 /* MAX_POSITIONAL_OPTS */];
 };
 
 #define NAME_STR STRINGIFY(PROG_NAME)

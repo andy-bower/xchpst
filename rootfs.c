@@ -37,11 +37,11 @@ static const char *exclude_root_dirs[] = {
   ".",
   "..",
   "lost+found",
-  nullptr,
+  NULL,
 };
 
 struct mount_info *special_mounts[SPECIAL_MAX];
-static struct mount_info *mts = nullptr;
+static struct mount_info *mts = NULL;
 static size_t num_mounts = 0;
 
 static bool bind_root_dirs(const char *new_root) {
@@ -50,14 +50,14 @@ static bool bind_root_dirs(const char *new_root) {
   struct stat statbuf;
   const char *entity;
   const char **filter;
-  DIR *dir = nullptr;
-  char *path = nullptr;
+  DIR *dir = NULL;
+  char *path = NULL;
   struct mount_info *mt;
   bool success = false;
   int dir1 = -1;
   int dir2 = -1;
 
-  mts = nullptr;
+  mts = NULL;
   memset(special_mounts, '\0', sizeof special_mounts);
 
   if ((dir1 = open(entity = "/", O_RDONLY | O_DIRECTORY)) == -1) {
@@ -70,14 +70,14 @@ static bool bind_root_dirs(const char *new_root) {
     perror("stat");
     goto fail;
   }
-  if ((dir = fdopendir(dir1)) == nullptr) {
+  if ((dir = fdopendir(dir1)) == NULL) {
     perror("opening root directory");
     close(dir1);
     return false;
   }
 
   mts = calloc(statbuf.st_nlink, sizeof *mts);
-  if (mts == nullptr) {
+  if (mts == NULL) {
     perror("calloc");
     goto fail;
   }
@@ -85,12 +85,12 @@ static bool bind_root_dirs(const char *new_root) {
   for (errno = 0; (de = readdir(dir));) {
     if (asprintf(&mt->from, "/%s", de->d_name) == -1 ||
         asprintf(&mt->to, "%s/%s", new_root, de->d_name) == -1)
-      mt->to = nullptr;
+      mt->to = NULL;
 
     if (de->d_type == DT_LNK) {
       int rc;
       path = malloc(PATH_MAX);
-      if (path == nullptr)
+      if (path == NULL)
         goto fail;
       rc = readlinkat(dir2, de->d_name, path, PATH_MAX - 1);
       if (rc == -1 || rc >= PATH_MAX - 1)
@@ -99,7 +99,7 @@ static bool bind_root_dirs(const char *new_root) {
       if (symlink(path, mt->to) == -1 || is_verbose())
         fprintf(stderr, "  symlink(%s,%s)=%s\n", path, mt->to, strerror(errno));
       free(path);
-      path = nullptr;
+      path = NULL;
     }
 
     if (de->d_type != DT_DIR)
@@ -121,7 +121,7 @@ static bool bind_root_dirs(const char *new_root) {
       special_mounts[special] = mt;
     }
     if (special != SPECIAL_PROC || (opt.new_ns & CLONE_NEWPID) == 0) {
-      mt->rc = mount(mt->from, mt->to, nullptr, MS_BIND | MS_REC, nullptr);
+      mt->rc = mount(mt->from, mt->to, NULL, MS_BIND | MS_REC, NULL);
       if (is_debug() || mt->rc != 0)
         fprintf(stderr, "  mount(%s,%s)=%s\n", mt->from, mt->to, strerror(mt->rc == 0 ? 0 : errno));
       if (mt->rc == 0)
@@ -168,19 +168,19 @@ void free_rootfs_data(void) {
     free(mt->to);
   }
   free(mts);
-  mts = nullptr;
+  mts = NULL;
 }
 
 bool create_new_root(const char *executable,
                      char **save_new_root,
                      char **save_old_root) {
-  char *old_root = nullptr;
-  char *new_root = nullptr;
+  char *old_root = NULL;
+  char *new_root = NULL;
   struct timeval t = {};
   bool success = false;
   int rc;
 
-  gettimeofday(&t, nullptr);
+  gettimeofday(&t, NULL);
   /* basename(3) promises that with _GNU_SOURCE defined, its argument is
      unmodified. */
   rc = asprintf(&new_root, "/tmp/xchpst-rootfs-%lld-%d-%s",

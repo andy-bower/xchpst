@@ -8,6 +8,7 @@
 #include <sched.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -18,68 +19,68 @@
 struct options opt;
 
 const struct option_info options_info[] = {
-  { C_R, OPT_SETUIDGID,   'u',  nullptr,       required_argument,
+  { C_R, OPT_SETUIDGID,   'u',  NULL,       required_argument,
     "set uid, gid and supplementary groups", "[:]USER[:GROUP]*", },
-  { C_R, OPT_ENVUIDGID,   'U',  nullptr,       required_argument,
+  { C_R, OPT_ENVUIDGID,   'U',  NULL,       required_argument,
     "set UID and GID vars", "[:]USER[:GROUP]", },
-  { C_R, OPT_ARGV0,       'b',  nullptr,       required_argument,
+  { C_R, OPT_ARGV0,       'b',  NULL,       required_argument,
     "launch program with ARGV0 as the argv[0]", "ARGV0" },
-  { C_R, OPT_ENVDIR,      'e',  nullptr,       required_argument,
+  { C_R, OPT_ENVDIR,      'e',  NULL,       required_argument,
     "populate environment from directory", "DIR" },
-  { C_R, OPT_CHROOT,      '/',  nullptr,       required_argument, "change root directory", "DIR" },
-  { C_R, OPT_CHDIR,       'C',  nullptr,       required_argument, "change directory", "DIR" },
-  { C_R, OPT_NICE,        'n',  nullptr,       required_argument, "adjust niceness", "INC" },
-  { C_R, OPT_LOCK_WAIT,   'l',  nullptr,       required_argument, "wait for lock", "FILE" },
-  { C_R, OPT_LOCK,        'L',  nullptr,       required_argument, "obtain lock; fail fast", "FILE" },
-  { C_L, OPT_LOCKOPT_WAIT,'N',  nullptr,       no_argument,       "wait for lock (default)" },
-  { C_L, OPT_LOCKOPT_TRY, 'n',  nullptr,       no_argument,       "don't wait for lock" },
-  { C_L, OPT_LOCKOPT_NOISY,'X', nullptr,       no_argument,       "fail noisily (default)" },
-  { C_L, OPT_LOCKOPT_QUIET,'x', nullptr,       no_argument,       "fail silently" },
-  { C_RS,OPT_LIMIT_MEM,   'm',  nullptr,       required_argument,
+  { C_R, OPT_CHROOT,      '/',  NULL,       required_argument, "change root directory", "DIR" },
+  { C_R, OPT_CHDIR,       'C',  NULL,       required_argument, "change directory", "DIR" },
+  { C_R, OPT_NICE,        'n',  NULL,       required_argument, "adjust niceness", "INC" },
+  { C_R, OPT_LOCK_WAIT,   'l',  NULL,       required_argument, "wait for lock", "FILE" },
+  { C_R, OPT_LOCK,        'L',  NULL,       required_argument, "obtain lock; fail fast", "FILE" },
+  { C_L, OPT_LOCKOPT_WAIT,'N',  NULL,       no_argument,       "wait for lock (default)" },
+  { C_L, OPT_LOCKOPT_TRY, 'n',  NULL,       no_argument,       "don't wait for lock" },
+  { C_L, OPT_LOCKOPT_NOISY,'X', NULL,       no_argument,       "fail noisily (default)" },
+  { C_L, OPT_LOCKOPT_QUIET,'x', NULL,       no_argument,       "fail silently" },
+  { C_RS,OPT_LIMIT_MEM,   'm',  NULL,       required_argument,
     "set soft DATA, STACK, MEMLOCK and AS limits", "BYTES" },
-  { C_RS,OPT_RLIMIT_DATA, 'd',  nullptr,       required_argument, "set soft RLIMIT_DATA", "BYTES" },
-  { C_XS,OPT_RLIMIT_STACK,'s',  nullptr,       required_argument, "set soft RLIMIT_STACK", "BYTES" },
-  { C_S, OPT_RLIMIT_MEMLOCK,'l', nullptr,      required_argument, "set soft RLIMIT_MEMLOCK", "BYTES" },
-  { C_X, OPT_RLIMIT_MEMLOCK,'\0',"memlock",    required_argument, "set soft RLIMIT_MEMLOCK", "BYTES" },
-  { C_XS,OPT_RLIMIT_AS,   'a',  nullptr,       required_argument, "set soft RLIMIT_AS", "BYTES" },
-  { C_RS,OPT_RLIMIT_NOFILE,'o', nullptr,       required_argument, "set soft RLIMIT_NOFILE", "FILES" },
-  { C_RS,OPT_RLIMIT_NPROC,'p',  nullptr,       required_argument, "set soft RLIMIT_NPROC", "PROCS" },
-  { C_RS,OPT_RLIMIT_FSIZE,'f',  nullptr,       required_argument, "set soft RLIMIT_FSIZE", "BYTES" },
-  { C_RS,OPT_RLIMIT_CORE, 'c',  nullptr,       required_argument, "set soft RLIMIT_CORE", "BYTES" },
-  { C_XS,OPT_RLIMIT_RSS,  'r',  nullptr,       required_argument, "set soft RLIMIT_RSS", "BYTES" },
-  { C_RS,OPT_RLIMIT_CPU,  't',  nullptr,       required_argument, "set soft RLIMIT_CPU", "SECONDS" },
-  { C_ALL,OPT_VERBOSE,    'v',  "verbose",     no_argument,       "be verbose" },
-  { C_R, OPT_VERSION,     'V',  "version",     no_argument,       "show " NAME_STR " version" },
-  { C_R, OPT_PGRPHACK,    'P',  nullptr,       no_argument,       "run in new process group" },
-  { C_R, OPT_CLOSE_STDIN, '0',  nullptr,       no_argument,       "close stdin" },
-  { C_R, OPT_CLOSE_STDOUT,'1',  nullptr,       no_argument,       "close stdout" },
-  { C_R, OPT_CLOSE_STDERR,'2',  nullptr,       no_argument,       "close stderr" },
-  { C_X, OPT_LEGACY,      '@',  nullptr,       no_argument,
+  { C_RS,OPT_RLIMIT_DATA, 'd',  NULL,       required_argument, "set soft RLIMIT_DATA", "BYTES" },
+  { C_XS,OPT_RLIMIT_STACK,'s',  NULL,       required_argument, "set soft RLIMIT_STACK", "BYTES" },
+  { C_S, OPT_RLIMIT_MEMLOCK,'l', NULL,      required_argument, "set soft RLIMIT_MEMLOCK", "BYTES" },
+  { C_X, OPT_RLIMIT_MEMLOCK,'\0',"memlock", required_argument, "set soft RLIMIT_MEMLOCK", "BYTES" },
+  { C_XS,OPT_RLIMIT_AS,   'a',  NULL,       required_argument, "set soft RLIMIT_AS", "BYTES" },
+  { C_RS,OPT_RLIMIT_NOFILE,'o', NULL,       required_argument, "set soft RLIMIT_NOFILE", "FILES" },
+  { C_RS,OPT_RLIMIT_NPROC,'p',  NULL,       required_argument, "set soft RLIMIT_NPROC", "PROCS" },
+  { C_RS,OPT_RLIMIT_FSIZE,'f',  NULL,       required_argument, "set soft RLIMIT_FSIZE", "BYTES" },
+  { C_RS,OPT_RLIMIT_CORE, 'c',  NULL,       required_argument, "set soft RLIMIT_CORE", "BYTES" },
+  { C_XS,OPT_RLIMIT_RSS,  'r',  NULL,       required_argument, "set soft RLIMIT_RSS", "BYTES" },
+  { C_RS,OPT_RLIMIT_CPU,  't',  NULL,       required_argument, "set soft RLIMIT_CPU", "SECONDS" },
+  { C_ALL,OPT_VERBOSE,    'v',  "verbose",  no_argument,       "be verbose" },
+  { C_R, OPT_VERSION,     'V',  "version",  no_argument,       "show " NAME_STR " version" },
+  { C_R, OPT_PGRPHACK,    'P',  NULL,       no_argument,       "run in new process group" },
+  { C_R, OPT_CLOSE_STDIN, '0',  NULL,       no_argument,       "close stdin" },
+  { C_R, OPT_CLOSE_STDOUT,'1',  NULL,       no_argument,       "close stdout" },
+  { C_R, OPT_CLOSE_STDERR,'2',  NULL,       no_argument,       "close stderr" },
+  { C_X, OPT_LEGACY,      '@',  NULL,       no_argument,
     "restricts following options to chpst(8) ones" },
-  { C_X, OPT_HELP,        'h',  "help",        no_argument,       "show help" },
-  { C_X, OPT_EXIT,        '\0', "exit",        optional_argument,
+  { C_X, OPT_HELP,        'h',  "help",     no_argument,       "show help" },
+  { C_X, OPT_EXIT,        '\0', "exit",     optional_argument,
     "exit (with optional RETCODE)", "RETCODE" },
-  { C_X, OPT_MOUNT_NS,    '\0', "mount-ns",    no_argument,       "create mount namespace" },
-  { C_X, OPT_NET_NS,      '\0', "net-ns",      no_argument,       "create net namespace" },
-  { C_X, OPT_USER_NS,     '\0', "user-ns",     no_argument,       "create user namespace" },
-  { C_X, OPT_PID_NS,      '\0', "pid-ns",      no_argument,       "create pid namespace" },
-  { C_X, OPT_NET_ADOPT,   '\0', "adopt-net",   required_argument,
+  { C_X, OPT_MOUNT_NS,    '\0', "mount-ns", no_argument,       "create mount namespace" },
+  { C_X, OPT_NET_NS,      '\0', "net-ns",   no_argument,       "create net namespace" },
+  { C_X, OPT_USER_NS,     '\0', "user-ns",  no_argument,       "create user namespace" },
+  { C_X, OPT_PID_NS,      '\0', "pid-ns",   no_argument,       "create pid namespace" },
+  { C_X, OPT_NET_ADOPT,   '\0', "adopt-net",required_argument,
     "adopt net namespace", "NS-PATH" },
-  { C_X, OPT_PRIVATE_RUN, '\0', "private-run", no_argument,       "create private run dir" },
-  { C_X, OPT_PRIVATE_TMP, '\0', "private-tmp", no_argument,       "create private tmp dir" },
-  { C_X, OPT_RO_SYS,      '\0', "ro-sys",      no_argument,       "create read only system" },
-  { C_X, OPT_CAPBS_KEEP,  '\0', "cap-bs-keep", required_argument,
+  { C_X, OPT_PRIVATE_RUN, '\0', "private-run",no_argument,     "create private run dir" },
+  { C_X, OPT_PRIVATE_TMP, '\0', "private-tmp",no_argument,     "create private tmp dir" },
+  { C_X, OPT_RO_SYS,      '\0', "ro-sys",     no_argument,     "create read only system" },
+  { C_X, OPT_CAPBS_KEEP,  '\0', "cap-bs-keep",required_argument,
     "restrict capabilities bounding set", "CAP[,...]" },
-  { C_X, OPT_CAPBS_DROP,  '\0', "cap-bs-drop", required_argument,
+  { C_X, OPT_CAPBS_DROP,  '\0', "cap-bs-drop",required_argument,
     "drop from capabilities bounding set", "CAP[,...]" },
-  { C_X, OPT_CAPS_KEEP,   '\0', "caps-keep",   required_argument,
+  { C_X, OPT_CAPS_KEEP,   '\0', "caps-keep", required_argument,
     "keep (only) these capabilities", "CAP[,...]" },
-  { C_X, OPT_CAPS_DROP,   '\0', "caps-drop",   required_argument,
+  { C_X, OPT_CAPS_DROP,   '\0', "caps-drop", required_argument,
     "drop these capabilities", "CAP[,...]" },
-  { C_X, OPT_FORK_JOIN,   '\0', "fork-join",   no_argument,       "fork and wait for process" },
-  { C_X, OPT_NEW_ROOT,    '\0', "new-root",    no_argument,       "create a new root fs" },
+  { C_X, OPT_FORK_JOIN,   '\0', "fork-join", no_argument,      "fork and wait for process" },
+  { C_X, OPT_NEW_ROOT,    '\0', "new-root",  no_argument,      "create a new root fs" },
 };
-constexpr size_t max_options = sizeof options_info / (sizeof *options_info);
+#define max_options (sizeof options_info / sizeof *options_info)
 
 static struct option options[max_options + 1];
 static char optstr[max_options * 2];
@@ -442,10 +443,10 @@ int options_parse(int argc, char *argv[]) {
   int c;
 
   while ((c = opt.app->long_opts ?
-                getopt_long(argc, argv, optstr, options, nullptr) :
+                getopt_long(argc, argv, optstr, options, NULL) :
                 getopt(argc, argv, optstr)) != -1) {
     bool is_short = isascii(c);
-    const struct option_info *incompatible_option = nullptr;
+    const struct option_info *incompatible_option = NULL;
 
     /* Look up option definition */
     for (optdef = options_info;
@@ -458,7 +459,7 @@ int options_parse(int argc, char *argv[]) {
            * another one that is compatible later in the list. */
           incompatible_option = optdef;
         } else {
-          incompatible_option = nullptr;
+          incompatible_option = NULL;
           break;
         }
       }

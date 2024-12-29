@@ -20,12 +20,12 @@ bool read_env_dir(const char *dir_name) {
   int dir1 = -1;
   int dir2 = -1;
   int file = -1;
-  DIR *dir = nullptr;
+  DIR *dir = NULL;
   const char *entity;
   const struct dirent *de;
   bool success = false;
   struct stat statbuf;
-  char *data = nullptr;
+  char *data = NULL;
   size_t data_sz = 0;
   size_t buffered;
   size_t end;
@@ -36,7 +36,7 @@ bool read_env_dir(const char *dir_name) {
     goto fail;
   if ((dir2 = openat(dir1, "./", O_RDONLY | O_DIRECTORY)) == -1)
     goto fail;
-  if ((dir = fdopendir(dir1)) == nullptr)
+  if ((dir = fdopendir(dir1)) == NULL)
     goto fail;
 
   for (errno = 0; (de = readdir(dir));) {
@@ -50,7 +50,7 @@ bool read_env_dir(const char *dir_name) {
       data_sz = statbuf.st_size;
       free(data);
       data = malloc(data_sz + 1);
-      if (data == nullptr)
+      if (data == NULL)
         goto fail;
     }
 
@@ -97,7 +97,7 @@ fail:
   free(data);
   if (file != -1)
     close(file);
-  if (dir != nullptr)
+  if (dir != NULL)
     closedir(dir);
   else if (dir1 != -1)
     close(dir1);

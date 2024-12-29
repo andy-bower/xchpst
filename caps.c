@@ -64,14 +64,14 @@ bool drop_capabilities(void) {
     fv = CAP_SET;
     caps = cap_get_proc(); /* not _init() so we can print diagnostics */
   }
-  if (caps == nullptr) {
+  if (caps == NULL) {
     perror("could not get init capabilities");
     goto fail0;
   }
 
   if (is_verbose()) {
-    char *capstr = cap_to_text(caps, nullptr);
-    fprintf(stderr, "initial capabilities: %s\n", cap_to_text(caps, nullptr));
+    char *capstr = cap_to_text(caps, NULL);
+    fprintf(stderr, "initial capabilities: %s\n", cap_to_text(caps, NULL));
     cap_free(capstr);
   }
   if (fv == CAP_SET)
@@ -107,8 +107,8 @@ bool drop_capabilities(void) {
   }
 
   if (is_verbose()) {
-    char *capstr = cap_to_text(caps, nullptr);
-    fprintf(stderr, "setting capabilities to: %s\n", cap_to_text(caps, nullptr));
+    char *capstr = cap_to_text(caps, NULL);
+    fprintf(stderr, "setting capabilities to: %s\n", cap_to_text(caps, NULL));
     cap_free(capstr);
   }
 
@@ -120,8 +120,8 @@ bool drop_capabilities(void) {
   if (is_verbose()) {
     cap_free(caps);
     caps = cap_get_proc();
-    char *capstr = cap_to_text(caps, nullptr);
-    fprintf(stderr, "final capabilities: %s\n", cap_to_text(caps, nullptr));
+    char *capstr = cap_to_text(caps, NULL);
+    fprintf(stderr, "final capabilities: %s\n", cap_to_text(caps, NULL));
     cap_free(capstr);
   }
 

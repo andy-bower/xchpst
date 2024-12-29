@@ -16,7 +16,6 @@
 #include <sched.h>
 #include <signal.h>
 #include <stdarg.h>
-#include <stdbit.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -53,7 +52,7 @@ const struct app apps[] = {
   { COMPAT_ENVUIDGID, "envuidgid", false, 1, { OPT_ENVUIDGID } },
   { COMPAT_SETLOCK,   "setlock",   false, 1, { OPT_LOCK_WAIT } },
 };
-constexpr size_t max_apps = sizeof apps / (sizeof *apps);
+#define max_apps (sizeof apps / (sizeof *apps))
 
 static struct {
   char uid[16];
@@ -86,10 +85,10 @@ static int write_once(const char *file, const char *fmt, ...) {
   if ((rc = fd == -1 ? 1 : 0))
     goto fail0;
 
-  va_start(args);
+  va_start(args, fmt);
   len = vasprintf(&text, fmt, args);
   va_end(args);
-  if (text == nullptr || len == -1) {
+  if (text == NULL || len == -1) {
     rc = -1;
     goto fail;
   }
@@ -147,8 +146,8 @@ int main(int argc, char *argv[]) {
   sigset_t oldmask;
   char **sub_argv;
   char *executable;
-  char *new_root = nullptr;
-  char *old_root = nullptr;
+  char *new_root = NULL;
+  char *old_root = NULL;
   int sub_argc;
   pid_t child;
   int optind;
@@ -215,7 +214,7 @@ int main(int argc, char *argv[]) {
   sub_argc = argc - optind;
   sub_argv = malloc((sub_argc + 1) * sizeof *sub_argv);
   memcpy(sub_argv, argv + optind, sub_argc * sizeof *sub_argv);
-  sub_argv[sub_argc] = nullptr;
+  sub_argv[sub_argc] = NULL;
 
   executable = argv[optind];
 
@@ -365,19 +364,19 @@ int main(int argc, char *argv[]) {
     if (opt.verbosity > 0) fprintf(stderr, "created 0xb%b namespaces\n", opt.new_ns);
 
     if (opt.new_ns & CLONE_NEWNS) {
-      rc = mount(nullptr, "/", nullptr,
-                 MS_REC | MS_SLAVE, nullptr);
+      rc = mount(NULL, "/", NULL,
+                 MS_REC | MS_SLAVE, NULL);
       if (rc == -1)
         fprintf(stderr, "recursive remounting / as MS_SLAVE: %s", strerror(errno));
     }
 
     if (opt.new_ns & CLONE_NEWNET)
-      special_mount("/sys", "sysfs", "sysfs", nullptr);
+      special_mount("/sys", "sysfs", "sysfs", NULL);
   }
   if (opt.new_ns & CLONE_NEWUSER) {
     rc = prctl(PR_SET_DUMPABLE, 1);
     if (uid != 0 || gid != 0) {
-      setgroups(0, nullptr);
+      setgroups(0, NULL);
       write_once("/proc/self/setgroups", "%s", "deny\n");
       write_once("/proc/self/gid_map", "%u %u %u\n", 0, gid, 1);
       write_once("/proc/self/uid_map", "%u %u %u\n", 0, uid, 1);
@@ -388,7 +387,7 @@ int main(int argc, char *argv[]) {
   }
 
   if (opt.net_adopt) {
-    const char *failed_op = nullptr;
+    const char *failed_op = NULL;
     if ((fd = open(opt.net_adopt, O_RDONLY)) != -1) {
       if ((rc = setns(fd, CLONE_NEWNET)) == 0) {
         if ((rc = umount2(opt.net_adopt, MNT_DETACH)) == 0) {
@@ -435,14 +434,14 @@ int main(int argc, char *argv[]) {
     } else if (child != 0) {
       goto join;
     } else {
-      if (sigprocmask(SIG_SETMASK, &oldmask, nullptr) == -1)
+      if (sigprocmask(SIG_SETMASK, &oldmask, NULL) == -1)
         perror("warning: could not restore signal mask in child");
     }
   }
 
   if (opt.new_ns & CLONE_NEWPID &&
       special_mounts[SPECIAL_PROC]) {
-    rc = mount("none", special_mounts[SPECIAL_PROC]->to, "proc", 0, nullptr);
+    rc = mount("none", special_mounts[SPECIAL_PROC]->to, "proc", 0, NULL);
     if (rc == -1)
       perror("mounting proc in new ns");
   }
@@ -456,7 +455,7 @@ int main(int argc, char *argv[]) {
 
   if (!opt.new_root) {
     if (opt.new_ns & CLONE_NEWPID)
-      special_mount("/proc", "proc", "procfs", nullptr);
+      special_mount("/proc", "proc", "procfs", NULL);
   }
 
   if (opt.private_run)
@@ -476,7 +475,7 @@ int main(int argc, char *argv[]) {
       goto finish;
 
   for (unsigned int close_fds = opt.close_fds; close_fds; close_fds &= ~(1 << fd))
-    close(fd = stdc_trailing_zeros(close_fds));
+    close(fd = /*stdc_trailing_zeros*/ __builtin_ctz(close_fds));
 
   /* Launch the target */
   rc = execvp(executable, sub_argv);

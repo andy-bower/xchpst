@@ -27,7 +27,7 @@ int special_mount(char *path, char *fs, char *desc, char *options) {
   if (rc == 0 || errno == EEXIST) {
     umount2(path, MNT_DETACH);
     op = "mount";
-    rc = mount(nullptr, path, fs,
+    rc = mount(NULL, path, fs,
                MS_NODEV | MS_NOEXEC | MS_NOSUID, options);
   } else
     if (rc == -1)
@@ -48,17 +48,17 @@ int remount_ro(const char *path) {
     return ENOENT;
 
   /* Try remount first, in case we don't need a bind mount. */
-  rc = mount(path, path, nullptr,
-             MS_REMOUNT | MS_BIND | MS_REC | MS_RDONLY, nullptr);
+  rc = mount(path, path, NULL,
+             MS_REMOUNT | MS_BIND | MS_REC | MS_RDONLY, NULL);
   if (rc == -1) {
     /* we hope errno == EINVAL but no need to check as will find out later */
-    rc = mount(path, path, nullptr,
-               MS_REC | MS_BIND | MS_SLAVE, nullptr);
+    rc = mount(path, path, NULL,
+               MS_REC | MS_BIND | MS_SLAVE, NULL);
     if (rc == -1)
       fprintf(stderr, "recursive bind mounting %s: %s", path, strerror(errno));
 
-    rc = mount(path, path, nullptr,
-               MS_REMOUNT | MS_REC | MS_BIND | MS_RDONLY, nullptr);
+    rc = mount(path, path, NULL,
+               MS_REMOUNT | MS_REC | MS_BIND | MS_RDONLY, NULL);
     if (rc == -1)
       fprintf(stderr, "remounting %s read-only: %s", path, strerror(errno));
   } else if (opt.verbosity > 0) {

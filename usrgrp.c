@@ -30,7 +30,7 @@ int usrgrp_parse(struct users_groups *ug, const char *arg) {
   int i;
 
   copy = strdup(arg);
-  if (copy == nullptr) return -1;
+  if (copy == NULL) return -1;
 
   ug->buf_tok = copy;
   if (*copy == ':') {
@@ -42,7 +42,7 @@ int usrgrp_parse(struct users_groups *ug, const char *arg) {
   if (n_toks > 2) {
     ug->num_supplemental = n_toks - 2;
     ug->supplemental = malloc(ug->num_supplemental * sizeof(struct sys_entry));
-    if (ug->supplemental == nullptr) {
+    if (ug->supplemental == NULL) {
       free(ug->buf_tok);
       return -1;
     }
