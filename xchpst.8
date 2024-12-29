@@ -79,14 +79,25 @@ The binding will be deleted from the filesystem meaning that the
 namespace will disappear when the process exits, if there is no other
 reference to it. This allows the calling script to set up a suitable
 networking environment for the process and hand it over.
+.It Fl -new-root
+Create a new root filesystem (will implicitly enable the creation
+of a new mount namespace).
 .It Fl -private-run
 Mount an isolated
 .Pa /run
 directory for the process.
+Unless
+.Fl -new-root
+is also specified, the old shared /run directory will still be accessible
+if the stacked mount is removed.
 .It Fl -private-tmp
 Mount an isolated
 .Pa /tmp
 directory for the process.
+Unless
+.Fl -new-root
+is also specified, the old shared /run directory will still be accessible
+if the stacked mount is removed.
 .It Fl -ro-sys
 Create a read-only filesystem hierarchy.
 Converts
