@@ -21,7 +21,7 @@ The
 utility changes process state according to the supplied options and then
 calls
 .Fn exec
-on a named executable with its following arguments.
+on a named executable with the positional arguments.
 .Pp
 .Nm
 is a backwards-compatible extension to the
@@ -61,15 +61,15 @@ This will more or less isolate the process from the networking subsystem.
 Create a PID namespace.
 This implies
 .Fl -fork-join
-because a new process is needed to act as PID and in order to be able
+because a new process is needed to act as PID 1 and in order to be able
 to mount a new procfs for the namespace.
 .It Fl -fork-join
 Fork a new process and wait for it to finish, passing on to the child
 process any signals received by the
 .Nm
 process.
-This option is necessary to take advantage of PID namespaces. The exit
-status is that of the child process.
+This option is necessary to take advantage of PID namespaces.
+The exit status is that of the child process.
 .It Fl -user-ns
 Create a user namespace.
 .It Fl -adopt-net Pa path
@@ -305,7 +305,7 @@ has different design principles from
 Use
 .Nm
 if you need the additional options to harden runit-supervised tasks;
-Use
+use
 .Nm chpst
 if you do not need them, for a minimal footprint.
 .Sh AUTHORS
