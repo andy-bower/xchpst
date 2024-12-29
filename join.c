@@ -95,6 +95,9 @@ bool join(pid_t child, sigset_t *mask, sigset_t *oldmask, int *retcode) {
     }
   }
 
+  if (is_verbose())
+    fprintf(stderr, "child terminated; cleaning up\n");
+
   close(sfd);
   close(pidfd);
   sigprocmask(SIG_SETMASK, oldmask, nullptr);

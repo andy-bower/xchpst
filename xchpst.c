@@ -24,11 +24,13 @@
 #include <unistd.h>
 #include <linux/prctl.h>
 #include <sys/file.h>
+#include <sys/dir.h>
 #include <sys/mount.h>
 #include <sys/stat.h>
 #include <sys/pidfd.h>
 #include <sys/prctl.h>
 #include <sys/signalfd.h>
+#include <sys/time.h>
 #include <sys/wait.h>
 
 #include "xchpst.h"
@@ -36,6 +38,8 @@
 #include "join.h"
 #include "env.h"
 #include "options.h"
+#include "rootfs.h"
+#include "mount.h"
 
 static const char *version_str = STRINGIFY(PROG_VERSION);
 
@@ -70,59 +74,6 @@ static void usage(FILE *out) {
   fprintf(out, " PROG...    launch PROG with changed process state\n");
   options_explain_positional(out);
   options_print(out);
-}
-
-static int special_mount(char *path, char *fs, char *desc, char *options) {
-  int rc;
-
-  rc = mkdirat(AT_FDCWD, path, 0777);
-  if (rc == 0 || errno == EEXIST) {
-    umount2(path, MNT_DETACH);
-    rc = mount(nullptr, path, fs,
-               MS_NODEV | MS_NOEXEC | MS_NOSUID, options);
-  }
-  if (rc == -1)
-    fprintf(stderr, "in creating %s mount: %s, %s\n", desc, path, strerror(errno));
-  return rc;
-}
-
-static int private_mount(char *path) {
-  return special_mount(path, "tmpfs", "private", "mode=0755");
-}
-
-static int remount(const char *path) {
-  struct stat statbuf;
-  int rc;
-
-  if ((rc = stat(path, &statbuf)) == -1 && errno == ENOENT)
-    return ENOENT;
-
-  /* Try remount first, in case we don't need a bind mount. */
-  rc = mount(path, path, nullptr,
-             MS_REMOUNT | MS_BIND | MS_REC | MS_RDONLY, nullptr);
-  if (rc == -1) {
-    /* we hope errno == EINVAL but no need to check as will find out later */
-    rc = mount(path, path, nullptr,
-               MS_REC | MS_BIND | MS_SLAVE, nullptr);
-    if (rc == -1)
-      fprintf(stderr, "recursive bind mounting %s: %s", path, strerror(errno));
-
-    rc = mount(path, path, nullptr,
-               MS_REMOUNT | MS_REC | MS_BIND | MS_RDONLY, nullptr);
-    if (rc == -1)
-      fprintf(stderr, "remounting %s read-only: %s", path, strerror(errno));
-  } else if (opt.verbosity > 0) {
-    fprintf(stderr, "could go straight to remount for %s\n", path);
-  }
-  return rc ? -1 : 0;
-}
-
-static int remount_sys(void) {
-  int rc;
-
-  return (((rc = remount("/usr")) && rc != ENOENT) ||
-         ((rc = remount("/boot/efi")) && rc != ENOENT) ||
-         ((rc = remount("/boot")) && rc != ENOENT)) ? -1 : 0;
 }
 
 static int write_once(const char *file, const char *fmt, ...) {
@@ -196,12 +147,15 @@ int main(int argc, char *argv[]) {
   sigset_t oldmask;
   char **sub_argv;
   char *executable;
+  char *new_root = nullptr;
+  char *old_root = nullptr;
   int sub_argc;
   pid_t child;
   int optind;
   int rc = 0;
   int ret = CHPST_ERROR_CHANGING_STATE;
   int lock_fd = -1;
+  bool in_new_root = false;
   uid_t uid;
   gid_t gid;
   int fd;
@@ -227,7 +181,7 @@ int main(int argc, char *argv[]) {
   }
 
   if (!(opt.new_ns & CLONE_NEWNS) &&
-      (opt.new_ns || opt.private_run || opt.private_tmp || opt.ro_sys)) {
+      (opt.new_ns || opt.private_run || opt.private_tmp || opt.ro_sys || opt.new_root)) {
     if (is_verbose())
       fprintf(stderr, "also creating mount namespace implicitly due to other options\n");
     opt.new_ns |= CLONE_NEWNS;
@@ -422,10 +376,12 @@ int main(int argc, char *argv[]) {
   }
   if (opt.new_ns & CLONE_NEWUSER) {
     rc = prctl(PR_SET_DUMPABLE, 1);
-    setgroups(0, nullptr);
-    write_once("/proc/self/setgroups", "%s", "deny\n");
-    write_once("/proc/self/gid_map", "%u %u %u\n", 0, gid, 1);
-    write_once("/proc/self/uid_map", "%u %u %u\n", 0, uid, 1);
+    if (uid != 0 || gid != 0) {
+      setgroups(0, nullptr);
+      write_once("/proc/self/setgroups", "%s", "deny\n");
+      write_once("/proc/self/gid_map", "%u %u %u\n", 0, gid, 1);
+      write_once("/proc/self/uid_map", "%u %u %u\n", 0, uid, 1);
+    }
     if (setresgid(0, 0, 0) != 0 ||
         setresuid(0, 0, 0) != 0)
       fprintf(stderr, "warning: error becoming root in user namespace, %s\n", strerror(errno));
@@ -451,20 +407,8 @@ int main(int argc, char *argv[]) {
   }
 
   if (opt.new_root) {
-    private_mount("/newroot");
-
-  }
-
-  if (opt.private_run)
-    private_mount("/run");
-
-  if (opt.private_tmp) {
-    private_mount("/tmp");
-    private_mount("/var/tmp");
-  }
-
-  if (opt.ro_sys) {
-    remount_sys();
+    if (!create_new_root(executable, &new_root, &old_root))
+      goto finish;
   }
 
   set_resource_limits();
@@ -496,8 +440,36 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  if (opt.new_ns & CLONE_NEWPID)
-    special_mount("/proc", "proc", "procfs", nullptr);
+  if (opt.new_ns & CLONE_NEWPID &&
+      special_mounts[SPECIAL_PROC]) {
+    rc = mount("none", special_mounts[SPECIAL_PROC]->to, "proc", 0, nullptr);
+    if (rc == -1)
+      perror("mounting proc in new ns");
+  }
+
+  if (opt.new_root) {
+    if (!pivot_to_new_root(new_root, old_root))
+      goto finish;
+    else
+      in_new_root = true;
+  }
+
+  if (!opt.new_root) {
+    if (opt.new_ns & CLONE_NEWPID)
+      special_mount("/proc", "proc", "procfs", nullptr);
+  }
+
+  if (opt.private_run)
+    private_mount("/run");
+
+  if (opt.private_tmp) {
+    private_mount("/tmp");
+    private_mount("/var/tmp");
+  }
+
+  if (opt.ro_sys) {
+    remount_sys_ro();
+  }
 
   if (opt.caps_op != CAP_OP_NONE)
     if (!drop_capabilities())
@@ -518,9 +490,25 @@ join:
     join(child, &newmask, &oldmask, &ret);
 
 finish:
+  /* Actions here should be
+     1) suitable for if exec() fails.
+     2) clean up if --fork-join is used.
+     3) not be necessary when --fork-join is not used.
+   */
+
+  if (new_root && !in_new_root) {
+    if (umount2(new_root, MNT_DETACH) == -1)
+      fprintf(stderr, "umount2(%s): %s\n", new_root, strerror(errno));
+    if (rmdir(new_root) == -1)
+      fprintf(stderr, "rmdir(%s): %s\n", new_root, strerror(errno));
+    free_rootfs_data();
+  }
+
   if (lock_fd != -1)
     close(lock_fd);
 
+  free(new_root);
+  free(old_root);
   free(sub_argv);
 
 finish0:
