@@ -6,6 +6,7 @@
  * offering additional options to harden process with namespace isolation
  * and more. */
 
+#include <libgen.h>
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -179,8 +180,10 @@ bool create_new_root(const char *executable,
   int rc;
 
   gettimeofday(&t, nullptr);
+  /* basename(3) promises that with _GNU_SOURCE defined, its argument is
+     unmodified. */
   rc = asprintf(&new_root, "/tmp/xchpst-rootfs-%lld-%d-%s",
-                (long long) t.tv_sec, getpid(), executable);
+                (long long) t.tv_sec, getpid(), basename((char *)executable));
   if (rc == -1) {
     perror("formatting new root");
     goto finish;
