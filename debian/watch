@@ -1,0 +1,3 @@
+# Compulsory line, this is a version 4 file
+version=4
+https://github.com/andy-bower/xchpst/tags .*/v?(\d.*)@ARCHIVE_EXT@

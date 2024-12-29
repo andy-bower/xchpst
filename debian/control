@@ -1,0 +1,16 @@
+Source: xchpst
+Section: admin
+Priority: optional
+Maintainer: Andrew Bower <andrew@bower.uk>
+Build-Depends: debhelper-compat (= 13), libcap-dev
+Standards-Version: 4.7.0
+Homepage: https://github.com/andy-bower/xchpst
+Rules-Requires-Root: no
+
+Package: xchpst
+Architecture: any
+Pre-Depends: ${misc:Pre-Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: eXtended CHange Process STate
+ xchpst is an extension of chpst that adds control of Linux namespaces
+ and capabilities.
