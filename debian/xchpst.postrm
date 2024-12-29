@@ -1,0 +1,21 @@
+#!/bin/sh
+
+set -e
+
+undivert () {
+	local from="$1"
+	local to="$2"
+	[ -z "$(dpkg-divert --list $1)" ] || dpkg-divert --rename \
+		--package xchpst --divert "$to" --remove "$from"
+}
+
+case "$1" in
+	remove|abort|abort-install|disappear)
+		undivert /usr/bin/xchpst /usr/bin/xchpst.fake
+		undivert \
+			/usr/share/man/man8/xchpst.8.gz \
+			/usr/share/man/man8/xchpst.fake.8.gz
+		;;
+esac
+
+#DEBHELPER#

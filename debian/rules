@@ -1,0 +1,12 @@
+#!/usr/bin/make -f
+
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+export DEB_CFLAGS_MAINT_APPEND = -Wall -pedantic -Werror
+
+include /usr/share/dpkg/pkg-info.mk
+
+export prefix=/usr
+export VERSION=$(DEB_VERSION_UPSTREAM)
+
+%:
+	dh $@

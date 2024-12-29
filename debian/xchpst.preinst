@@ -1,0 +1,20 @@
+#!/bin/sh
+
+set -e
+
+# If there is already an 'xchpst' binary installed, it will be an emulation
+# of xchpst that strips the extended options and passes the remainder to
+# the classic chpst tool. This emulated version is meant to be replaced
+# by our real one when we are installed.
+
+divert () {
+	local from="$1"
+	local to="$2"
+	[ -n "$(dpkg-divert --list $1)" ] || dpkg-divert --rename \
+		--package xchpst --divert "$to" --add "$from"
+}
+
+divert /usr/bin/xchpst /usr/bin/xchpst.fake
+divert /usr/share/man/man8/xchpst.8.gz /usr/share/man/man8/xchpst.fake.8.gz
+
+#DEBHELPER#

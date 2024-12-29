@@ -1,0 +1,31 @@
+xchpst (extended chpst) for Debian
+----------------------------------
+
+The xchpst package for debian enables runscripts provided for system
+services to launch those service with hardening options not available
+from the chpst tool normally used with runscripts. See the man page
+xchpst(8) for details.
+
+Runscripts that take advantage of xchpst features in Debian should ensure
+that they terminate their use of extended options with the '-@' separator
+to enable a fake version[^1] to invoke the classic 'chpst' tool with the
+remainder of compatible options.
+
+An example invocation within a runscript:
+
+exec xchpst --scheduler=idle --cap-bs-keep=CAP_NET_BIND_SERVICE,CAP_NET_RAW \
+  --new-root --ro-sys --private-tmp --protect-home --no-new-privs \
+  -@ -n 19 -- /usr/sbin/radvd --nodaemon --username radvd \
+  --logmethod stderr_clean --config /etc/radvd.conf
+
+The following files are presented in the package as documentation files
+because they need to be incorporated in another package - they are of no
+use when xchpst is already installed:
+
+ - /usr/share/doc/xchpst/xchpst-funcs.sh
+ - /usr/share/doc/xchpst/xchpst.fake
+ - /usr/share/doc/xchpst/xchpst.fake.8
+
+[^1]: Another package would install the file /usr/share/doc/xchpst.fake from
+this package as /usr/bin/xchpst and the xchpst package will move it away
+using a dpkg-divert diversion.
