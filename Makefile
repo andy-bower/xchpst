@@ -9,7 +9,7 @@ CFLAGS ?= -g
 #CFLAGS ?= -g -O2
 CFLAGS += -MMD -MP \
 	  -Wall -Wimplicit-fallthrough -Werror \
-	  -std=c11 \
+	  -std=c2x \
 	  -D_GNU_SOURCE \
 	  -DPROG_NAME=$(name) \
 	  -DPROG_VERSION=$(VERSION) \

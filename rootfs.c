@@ -176,7 +176,7 @@ bool create_new_root(const char *executable,
                      char **save_old_root) {
   char *old_root = NULL;
   char *new_root = NULL;
-  struct timeval t = {};
+  struct timeval t = { 0 };
   bool success = false;
   int rc;
 
