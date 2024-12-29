@@ -1,0 +1,8 @@
+xchpst (0.1.0)
+
+ * First release of xchpst (eXtended CHange Process STate) tool.
+ * This is a freshly-written tool, backwards-compatible with chpst.
+ * Versions numbered 0.x have an unstable user interface.
+ * See the man page, xchpst (8), for documentation.
+
+ -- Andrew Bower <andrew@bower.uk>  Sun, 29 Dec 2024 23:09:17 +0000
