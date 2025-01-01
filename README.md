@@ -20,3 +20,9 @@ The [CHANGELOG](CHANGELOG) represents the notable net differences between releas
 Thanks for your interest - please send feedback!
 
 -- Andrew Bower, 1 January 2025.
+
+## Build dependencies
+
+* GNU make
+* gcc-12
+* libcap-dev
