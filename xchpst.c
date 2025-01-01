@@ -41,9 +41,18 @@
 #include "mount.h"
 
 static const char *version_str = STRINGIFY(PROG_VERSION);
+#ifdef PROG_DEFAULT
+static const char *default_app = STRINGIFY(PROG_DEFAULT);
+#else
+static const char *default_app = "xchpst";
+#endif
 
 const struct app apps[] = {
+#ifdef STRICT_CHPST_COMPAT
   { COMPAT_CHPST,     "chpst",     .long_opts = false },
+#else
+  { COMPAT_XCHPST,    "chpst",     .long_opts = true },
+#endif
   { COMPAT_XCHPST,    "xchpst",    .long_opts = true },
   { COMPAT_SOFTLIMIT, "softlimit", .long_opts = false },
   { COMPAT_ENVDIR,    "envdir",    false, 1, { OPT_ENVDIR } },
@@ -141,6 +150,16 @@ void set_resource_limits(void) {
   set_rlimit(RLIMIT_CPU, &opt.rlimit_cpu);
 }
 
+static const struct app *find_app(const char *name) {
+  const struct app *app;
+
+  for (app = apps;
+       app - apps < max_apps && strcmp(name, app->name);
+       app++);
+
+  return app;
+}
+
 int main(int argc, char *argv[]) {
   sigset_t newmask;
   sigset_t oldmask;
@@ -161,9 +180,10 @@ int main(int argc, char *argv[]) {
   int i;
 
   /* As which application were we invoked? */
-  for (opt.app = apps;
-       opt.app - apps < max_apps && strcmp(program_invocation_short_name, opt.app->name);
-       opt.app++);
+  opt.app = find_app(program_invocation_short_name);
+  if (opt.app - apps == max_apps)
+    opt.app = find_app(default_app);
+  assert(opt.app - apps != max_apps);
 
   if (!options_init())
     return CHPST_ERROR_OPTIONS;

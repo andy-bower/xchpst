@@ -30,6 +30,7 @@ enum compat_level {
   COMPAT_SETLOCK   = 0200,
 };
 
+
 enum verbosity {
   LOG_LEVEL_NONE = 0,
   LOG_LEVEL_VERBOSE = 1,
