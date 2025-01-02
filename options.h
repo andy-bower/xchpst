@@ -97,6 +97,7 @@ enum opt {
   OPT_FORK_JOIN,
   OPT_NEW_ROOT,
   OPT_NO_NEW_PRIVS,
+  OPT_SCHEDULER,
 };
 static_assert(STDIN_FILENO == 0);
 
@@ -161,6 +162,8 @@ struct options {
   bool fork_join;
   bool new_root;
   bool no_new_privs;
+  bool scheduler;
+  int sched_policy;
   const char *lock_file;
   const char *env_dir;
   const char *chroot;

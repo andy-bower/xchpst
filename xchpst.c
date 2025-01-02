@@ -310,6 +310,9 @@ int main(int argc, char *argv[]) {
     }
   }
 
+  if (opt.scheduler && sched_setscheduler(0, opt.sched_policy, &((struct sched_param) {})) == -1)
+    perror("could not change scheduler policy");
+
   if (opt.cap_bounds_op != CAP_OP_NONE)
     if (!set_capabilities_bounding_set())
       goto finish;
