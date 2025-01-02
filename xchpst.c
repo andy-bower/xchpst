@@ -477,6 +477,9 @@ int main(int argc, char *argv[]) {
   for (unsigned int close_fds = opt.close_fds; close_fds; close_fds &= ~(1 << fd))
     close(fd = /*stdc_trailing_zeros*/ __builtin_ctz(close_fds));
 
+  if (opt.no_new_privs && prctl(PR_SET_NO_NEW_PRIVS, 1L, 0L, 0L, 0L) == -1)
+    perror("could not honour --no-new-privs");
+
   /* Launch the target */
   rc = execvp(executable, sub_argv);
 

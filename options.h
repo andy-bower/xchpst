@@ -96,6 +96,7 @@ enum opt {
   OPT_CAPS_DROP,
   OPT_FORK_JOIN,
   OPT_NEW_ROOT,
+  OPT_NO_NEW_PRIVS,
 };
 static_assert(STDIN_FILENO == 0);
 
@@ -159,6 +160,7 @@ struct options {
   bool new_session;
   bool fork_join;
   bool new_root;
+  bool no_new_privs;
   const char *lock_file;
   const char *env_dir;
   const char *chroot;

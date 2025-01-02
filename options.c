@@ -79,6 +79,7 @@ const struct option_info options_info[] = {
     "drop these capabilities", "CAP[,...]" },
   { C_X, OPT_FORK_JOIN,   '\0', "fork-join", no_argument,      "fork and wait for process" },
   { C_X, OPT_NEW_ROOT,    '\0', "new-root",  no_argument,      "create a new root fs" },
+  { C_X, OPT_NO_NEW_PRIVS,'\0', "no-new-privs", no_argument,   "no new privileges" },
 };
 #define max_options (sizeof options_info / sizeof *options_info)
 
@@ -351,6 +352,9 @@ static void handle_option(enum compat_level *compat,
     break;
   case OPT_NEW_ROOT:
     opt.new_root = true;
+    break;
+  case OPT_NO_NEW_PRIVS:
+    opt.no_new_privs = true;
     break;
   case OPT_SETUIDGID:
     if (usrgrp_parse(&opt.users_groups, optarg))
