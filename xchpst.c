@@ -489,6 +489,12 @@ int main(int argc, char *argv[]) {
     private_mount("/var/tmp");
   }
 
+  if (opt.protect_home) {
+    private_mount("/home");
+    private_mount("/root");
+    private_mount("/run/user");
+  }
+
   if (opt.ro_sys) {
     remount_sys_ro();
   }

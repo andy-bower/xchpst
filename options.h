@@ -90,6 +90,7 @@ enum opt {
   OPT_NET_ADOPT,
   OPT_PRIVATE_RUN,
   OPT_PRIVATE_TMP,
+  OPT_PROTECT_HOME,
   OPT_RO_SYS,
   OPT_CAPBS_KEEP,
   OPT_CAPBS_DROP,
@@ -153,6 +154,7 @@ struct options {
   bool renice;
   bool private_run;
   bool private_tmp;
+  bool protect_home;
   bool ro_sys;
   bool setuidgid;
   bool envuidgid;

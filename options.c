@@ -68,6 +68,7 @@ const struct option_info options_info[] = {
     "adopt net namespace", "NS-PATH" },
   { C_X, OPT_PRIVATE_RUN, '\0', "private-run",no_argument,     "create private run dir" },
   { C_X, OPT_PRIVATE_TMP, '\0', "private-tmp",no_argument,     "create private tmp dir" },
+  { C_X, OPT_PROTECT_HOME,'\0', "protect-home",no_argument,    "protect home directories" },
   { C_X, OPT_RO_SYS,      '\0', "ro-sys",     no_argument,     "create read only system" },
   { C_X, OPT_CAPBS_KEEP,  '\0', "cap-bs-keep",required_argument,
     "restrict capabilities bounding set", "CAP[,...]" },
@@ -335,6 +336,9 @@ static void handle_option(enum compat_level *compat,
     break;
   case OPT_PRIVATE_TMP:
     opt.private_tmp = true;
+    break;
+  case OPT_PROTECT_HOME:
+    opt.protect_home = true;
     break;
   case OPT_RO_SYS:
     opt.ro_sys = true;
