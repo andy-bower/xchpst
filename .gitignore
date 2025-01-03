@@ -6,6 +6,7 @@
 .*.swp
 xchpst
 chpst
+chpst.compat
 softlimit
 envdir
 envuidgid
