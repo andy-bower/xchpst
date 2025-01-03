@@ -98,6 +98,16 @@ Unless
 .Fl -new-root
 is also specified, the old shared /run directory will still be accessible
 if the stacked mount is removed.
+.It Fl -protect-home
+Mount isolated
+.Pa /home ,
+.Pa /root and
+.Pa /run/user
+directories for the process.
+Unless
+.Fl -new-root
+is also specified, the old shared host directories will still be accessible
+if the stacked mounts are removed.
 .It Fl -ro-sys
 Create a read-only filesystem hierarchy.
 Converts
@@ -319,8 +329,5 @@ if you do not need them, for a minimal footprint.
 .An -nosplit
 .An Andrew Bower Aq Mt andrew@bower.uk
 .Sh BUGS
-The new hardening features are in development and should not yet be
-treated as mature or production-ready. Further features are anticipated.
-.Pp
 Please raise bug reports at:
 .Lk https://github.com/andy-bower/xchpst/issues
