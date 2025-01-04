@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: MIT OR BSD-3-Clause
 # SPDX-FileCopyrightText: (c) Copyright 2024 Andrew Bower <andrew@bower.uk>
 #
 # Fake xchpst that strips the extended options and passes everything after
