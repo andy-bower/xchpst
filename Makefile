@@ -49,4 +49,6 @@ install:
 #	$(INSTALL) -m 755 -D -t $(DESTDIR)$(prefix)/bin               $(ALT_EXES)
 #	$(INSTALL) -m 755 -D -t $(DESTDIR)$(prefix)/bin               chpst.compat
 	$(INSTALL) -m 644 -D -t $(DESTDIR)$(prefix)/share/doc/$(name) xchpst-funcs.sh
+	$(INSTALL) -m 755 -D -t $(DESTDIR)$(prefix)/share/doc/$(name) xchpst.fake
 	$(INSTALL) -m 644 -D -t $(DESTDIR)$(prefix)/share/man/man8    $(name).8
+	$(INSTALL) -m 644 -D -t $(DESTDIR)$(prefix)/share/doc/$(name) $(name).fake.8

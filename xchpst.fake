@@ -1,0 +1,30 @@
+#!/bin/sh
+#
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: (c) Copyright 2024 Andrew Bower <andrew@bower.uk>
+#
+# Fake xchpst that strips the extended options and passes everything after
+# the first -@ or -- to classic chpst.
+#
+# This is intended to be installed as /usr/bin/xchpst by another package
+# knowing that there is no real xchpst available, so does not need to test
+# for real xchpst being present.
+#
+# Users of xchpst wishing their scripts to work using this script in the
+# absence of the real xchpst MUST include the -@ separator to allow chpst
+# options to pass and if no chpst options are needed MAY INSTEAD include
+# the -- separator before the executable to be launched.
+
+# Consume extended arguments
+while [ $# -gt 0 -a "$1" != "-@" -a "$1" != "--" ]
+do
+	shift
+done
+
+# Consume -@ but not --
+if [ "$1" = "-@" ]
+then
+	shift;
+fi
+
+exec chpst "$@"
