@@ -1,8 +1,20 @@
-xchpst (0.1.0)
+xchpst (0.2.0) UNRELEASED; urgency=medium
 
- * First release of xchpst (eXtended CHange Process STate) tool.
- * This is a freshly-written tool, backwards-compatible with chpst.
- * Versions numbered 0.x have an unstable user interface.
- * See the man page, xchpst (8), for documentation.
+  * Add new options
+    - add --no-new-privs
+    - add --scheduler
+    - add --protect-home
+  * Provide xchpst.fake example to be used to enable runscripts to use
+    xchpst features when present and chpst features otherwise.
+  * Fix minor issues
+
+ -- Andrew Bower <andrew@bower.uk>  Sat, 04 Jan 2025 21:51:52 +0000
+
+xchpst (0.1.0) unstable; urgency=medium
+
+  * First release of xchpst (eXtended CHange Process STate) tool.
+  * This is a freshly-written tool, backwards-compatible with chpst.
+  * Versions numbered 0.x have an unstable user interface.
+  * See the man page, xchpst (8), for documentation.
 
  -- Andrew Bower <andrew@bower.uk>  Sun, 29 Dec 2024 23:09:17 +0000
