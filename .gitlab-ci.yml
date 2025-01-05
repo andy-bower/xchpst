@@ -4,6 +4,9 @@
 stages:
   - build
 
+before_script:
+  - apt-get update && apt-get -y install libcap-dev
+
 build-job:
   stage: build
   script:
