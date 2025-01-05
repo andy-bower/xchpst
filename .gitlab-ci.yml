@@ -5,7 +5,7 @@ stages:
   - build
 
 before_script:
-  - apt-get update && apt-get -y install libcap-dev
+  - apt-get update && apt-get -y install libcap-dev make gcc
 
 build-job:
   stage: build
