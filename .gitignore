@@ -14,3 +14,4 @@ pgrphack
 setlock
 setuidgid
 .github/
+.gitlab*
