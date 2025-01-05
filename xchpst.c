@@ -70,7 +70,7 @@ static struct {
 
 static void version(FILE *out) {
   fprintf(out,
-          "xchpst-%s (c) Copyright 2024, Andrew Bower <andrew@bower.uk>\n",
+          "xchpst-%s (c) Copyright 2024,2025 Andrew Bower <andrew@bower.uk>\n",
           version_str);
 }
 

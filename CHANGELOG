@@ -1,14 +1,14 @@
-xchpst (0.2.0) UNRELEASED; urgency=medium
+xchpst (0.2.0) unstable; urgency=medium
 
   * Add new options
     - add --no-new-privs
     - add --scheduler
     - add --protect-home
-  * Provide xchpst.fake example to be used to enable runscripts to use
-    xchpst features when present and chpst features otherwise.
+  * Provide xchpst.fake example to enable runscripts to use xchpst
+    features when present and chpst features otherwise.
   * Fix minor issues
 
- -- Andrew Bower <andrew@bower.uk>  Sat, 04 Jan 2025 21:51:52 +0000
+ -- Andrew Bower <andrew@bower.uk>  Sun, 05 Jan 2025 23:28:09 +0000
 
 xchpst (0.1.0) unstable; urgency=medium
 
