@@ -11,7 +11,7 @@
 
 The documentation effort for this tool is focussed on the [man page](xchpts.8).
 
-Issues, pull requests and discussions welcome on this project's [github page](https://github.com/andy-bower/xchpst).
+Issues and merge requests welcome on the [project page](https://gitlab.com/abower/xchpst).
 
 Releases will take the form of git tags signed by my RSA/4096 PGP key [`06AB 786E 936C 6C73 F6D8 130C 4510 3394 30FC 9F34`](https://sw.cdefg.uk/xchpst/xchpst-signing-keys.gpg).
 
