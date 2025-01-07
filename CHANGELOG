@@ -1,3 +1,10 @@
+xchpst (0.2.1) unstable; urgency=medium
+
+  * Enable -Wextra and build cleanly therewith
+  * Demote xchpst.fake to subdirectory, not installed
+
+ -- Andrew Bower <andrew@bower.uk>  Tue, 07 Jan 2025 17:30:01 +0000
+
 xchpst (0.2.0) unstable; urgency=medium
 
   * Add new options
