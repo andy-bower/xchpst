@@ -61,7 +61,9 @@ const struct app apps[] = {
   { COMPAT_ENVUIDGID, "envuidgid", false, 1, { OPT_ENVUIDGID } },
   { COMPAT_SETLOCK,   "setlock",   false, 1, { OPT_LOCK_WAIT } },
 };
-#define max_apps (sizeof apps / (sizeof *apps))
+#define max_apps ((ssize_t) (sizeof apps / (sizeof *apps)))
+
+struct runtime runtime = {};
 
 static struct {
   char uid[16];
@@ -87,7 +89,7 @@ static void usage(FILE *out) {
 static int write_once(const char *file, const char *fmt, ...) {
   int fd = open(file, O_WRONLY);
   char *text;
-  size_t len;
+  ssize_t len;
   int rc = 0;
   va_list args;
 
@@ -330,8 +332,16 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  if (opt.scheduler && sched_setscheduler(0, opt.sched_policy, &((struct sched_param) {})) == -1)
+  if (opt.scheduler &&
+      sched_setscheduler(0, opt.sched_policy, &((struct sched_param) {})) == -1)
     perror("could not change scheduler policy");
+
+  if ((opt.cap_bounds_op != CAP_OP_NONE ||
+       opt.caps_op != CAP_OP_NONE) &&
+      !runtime.ok.caps) {
+    fprintf(stderr, "ignoring capabilities as not supported on system");
+    opt.cap_bounds_op = opt.caps_op = CAP_OP_NONE;
+  }
 
   if (opt.cap_bounds_op != CAP_OP_NONE)
     if (!set_capabilities_bounding_set())

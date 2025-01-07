@@ -26,7 +26,7 @@ int usrgrp_parse(struct users_groups *ug, const char *arg) {
   } state = STATE_USER;
   char *copy;
   char *scan;
-  size_t n_toks;
+  ssize_t n_toks;
   int i;
 
   copy = strdup(arg);

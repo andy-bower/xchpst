@@ -5,10 +5,11 @@ VERSION ?= 0.2.0
 name := xchpst
 
 prefix ?= /usr/local
-CFLAGS ?= -g
-#CFLAGS ?= -g -O2
+#CFLAGS ?= -g
+CFLAGS ?= -g -O2
 CFLAGS += -MMD -MP \
-	  -Wall -Wimplicit-fallthrough -Werror \
+	  -Wall -Wextra -Werror \
+	  -Wno-missing-field-initializers \
 	  -std=c2x \
 	  -D_GNU_SOURCE \
 	  -DPROG_NAME=$(name) \

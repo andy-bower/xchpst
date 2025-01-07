@@ -83,7 +83,7 @@ const struct option_info options_info[] = {
   { C_X, OPT_NO_NEW_PRIVS,'\0', "no-new-privs", no_argument,   "no new privileges" },
   { C_X, OPT_SCHEDULER,   '\0', "scheduler", required_argument,"set scheduler policy" },
 };
-#define max_options (sizeof options_info / sizeof *options_info)
+#define max_options ((ssize_t) ((sizeof options_info / sizeof *options_info)))
 
 static struct option options[max_options + 1];
 static char optstr[max_options * 2];
@@ -233,11 +233,18 @@ bool parse_limit(rlim_t *lim, const char *arg) {
 bool parse_caps(cap_bits_t *caps, char *names) {
   cap_bits_t set = 0;
   cap_value_t val;
+  cap_value_t max_cap = cap_max_bits();
   bool good = true;
   char *tok;
   int rc;
 
-  assert(8 * sizeof set > cap_max_bits());
+  if (max_cap < 0) {
+    /* Record that we don't have capabilities but don't fail option */
+    runtime.ok.caps = false;
+    return true;
+  }
+
+  assert(8 * sizeof set >= (unsigned) max_cap);
 
   while ((tok = strsep(&names, ","))) {
     rc = cap_from_name(tok, &val);

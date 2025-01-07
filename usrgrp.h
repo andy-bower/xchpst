@@ -29,7 +29,7 @@ struct users_groups {
   struct sys_entry user;
   struct sys_entry group;
   struct sys_entry *supplemental;
-  size_t num_supplemental;
+  ssize_t num_supplemental;
   /* Buffers to be freed */
   void *buf_tok;
 };

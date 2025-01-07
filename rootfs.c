@@ -42,7 +42,7 @@ static const char *exclude_root_dirs[] = {
 
 struct mount_info *special_mounts[SPECIAL_MAX];
 static struct mount_info *mts = NULL;
-static size_t num_mounts = 0;
+static ssize_t num_mounts = 0;
 
 static bool bind_root_dirs(const char *new_root) {
   enum special_mount special;

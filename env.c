@@ -26,9 +26,9 @@ bool read_env_dir(const char *dir_name) {
   bool success = false;
   struct stat statbuf;
   char *data = NULL;
-  size_t data_sz = 0;
-  size_t buffered;
-  size_t end;
+  ssize_t data_sz = 0;
+  ssize_t buffered;
+  ssize_t end;
   ssize_t ptr;
   int rc;
 

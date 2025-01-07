@@ -22,4 +22,13 @@ enum chpst_exit {
 
 #define NAME_STR STRINGIFY(PROG_NAME)
 
+/* Support levels determined at runtime */
+struct runtime {
+  struct {
+    bool caps;
+  } ok;
+};
+
+extern struct runtime runtime;
+
 #endif
