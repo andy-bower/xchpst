@@ -484,7 +484,7 @@ int options_parse(int argc, char *argv[]) {
          optdef - options_info < max_options;
          optdef++) {
 
-      if (c == (is_short ? optdef->short_name : optdef->option)) {
+      if (c == (is_short ? optdef->short_name : (int) optdef->option)) {
         if ((optdef->compat_level & compat) == 0) {
           /* Tentatively found an incompatible option but there may be
            * another one that is compatible later in the list. */

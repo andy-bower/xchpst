@@ -49,7 +49,7 @@ static const/*expr*/ enum compat_level C_L = COMPAT_SETLOCK;
 
 static const/*expr*/ enum compat_level C_ALL = 0377;
 
-enum opt:int {
+enum opt /* C23: :int */ {
   OPT_SETUIDGID = 0x1000,
   OPT_ENVUIDGID,
   OPT_ARGV0,
