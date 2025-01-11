@@ -99,9 +99,10 @@ fail:
     close(file);
   if (dir != NULL)
     closedir(dir);
+ /* if fdopendir(dir1) succeeded, then don't close dir1 */
   else if (dir1 != -1)
     close(dir1);
-  if (dir2)
+  if (dir2 != -1)
     close(dir2);
   return success;
 }
