@@ -8,6 +8,7 @@
 #include <ctype.h>
 #include <getopt.h>
 #include <errno.h>
+#include <sched.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -100,6 +101,7 @@ enum opt /* C23: :int */ {
   OPT_NEW_ROOT,
   OPT_NO_NEW_PRIVS,
   OPT_SCHEDULER,
+  OPT_CPUS,
 };
 static_assert(STDIN_FILENO == 0);
 
@@ -189,6 +191,11 @@ struct options {
   cap_bits_t cap_bounds;
   cap_bits_t caps_op;
   cap_bits_t caps;
+
+  struct {
+    cpu_set_t *mask;
+    int size;
+  } cpu_affinity;
 };
 
 extern struct options opt;

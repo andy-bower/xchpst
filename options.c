@@ -81,7 +81,8 @@ const struct option_info options_info[] = {
   { C_X, OPT_FORK_JOIN,   '\0', "fork-join", no_argument,      "fork and wait for process" },
   { C_X, OPT_NEW_ROOT,    '\0', "new-root",  no_argument,      "create a new root fs" },
   { C_X, OPT_NO_NEW_PRIVS,'\0', "no-new-privs", no_argument,   "no new privileges" },
-  { C_X, OPT_SCHEDULER,   '\0', "scheduler", required_argument,"set scheduler policy" },
+  { C_X, OPT_SCHEDULER,   '\0', "scheduler", required_argument,"set scheduler policy", "POLICY" },
+  { C_X, OPT_CPUS,        '\0', "cpus",      required_argument,"set CPU affinity", "AFFINITY" },
 };
 #define max_options ((ssize_t) ((sizeof options_info / sizeof *options_info)))
 
@@ -258,6 +259,75 @@ bool parse_caps(cap_bits_t *caps, char *names) {
   return good;
 }
 
+bool parse_cpu_range(const char *str, int range[3], int *max) {
+  int field = 0;
+  int val = 0;
+  char c = -1;
+
+  while (field < 3 && c) {
+    if (isdigit(c = *str++)) {
+      val = val * 10 + c - '0';
+    } else if ((c == '-' && field == 0) ||
+               (c == ':' && field == 1) ||
+               c == '\0') {
+      range[field++] = val;
+      val = 0;
+    } else {
+      return false;
+    }
+  }
+
+  /* Default stride is 1 */
+  if (field < 3)
+    range[2] = 1;
+
+  /* Singleton */
+  if (field < 2)
+    range[1] = range[0];
+
+  /* No CPUs listed */
+  if (field < 1)
+    return false;
+
+  if (max != NULL && range[1] > *max)
+    *max = range[1];
+
+  return true;
+}
+
+void parse_cpus(char *spec) {
+  char *rest = spec;
+  char *tok;
+  char *end = spec;
+  int range[3];
+  int cpu;
+  int max = 0;
+
+  while((tok = strsep(&rest, ","))) {
+    if (!parse_cpu_range(tok, range, &max))
+      goto fail;
+    end = tok;
+  }
+  opt.cpu_affinity.size = CPU_ALLOC_SIZE(max++);
+  opt.cpu_affinity.mask = CPU_ALLOC(max);
+  if (opt.cpu_affinity.mask == NULL) {
+    perror("CPU_ALLOC");
+    goto fail;
+  }
+  CPU_ZERO_S(opt.cpu_affinity.size, opt.cpu_affinity.mask);
+
+  for (tok = spec; tok <= end; tok += strlen(tok) + 1) {
+    parse_cpu_range(tok, range, NULL);
+    for (cpu = range[0]; cpu <= range[1]; cpu += range[2])
+      CPU_SET_S(cpu, opt.cpu_affinity.size, opt.cpu_affinity.mask);
+  }
+  return;
+
+fail:
+  opt.error = true;
+  fprintf(stderr, "error in CPU list (at %s)\n", tok);
+}
+
 int sched_policy_from_name(const char *name) {
   if (!strcmp(name, "batch"))
     return SCHED_BATCH;
@@ -382,6 +452,9 @@ static void handle_option(enum compat_level *compat,
   case OPT_SCHEDULER:
     opt.scheduler = true;
     opt.sched_policy = sched_policy_from_name(optarg);
+    break;
+  case OPT_CPUS:
+    parse_cpus(optarg);
     break;
   case OPT_SETUIDGID:
     if (usrgrp_parse(&opt.users_groups, optarg))
@@ -531,6 +604,8 @@ int options_parse(int argc, char *argv[]) {
 }
 
 void options_free(void) {
+  if (opt.cpu_affinity.size)
+    CPU_FREE(opt.cpu_affinity.mask);
   usrgrp_free(&opt.users_groups);
   usrgrp_free(&opt.env_users_groups);
 }

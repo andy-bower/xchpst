@@ -332,6 +332,11 @@ int main(int argc, char *argv[]) {
     }
   }
 
+  if (opt.cpu_affinity.size &&
+      sched_setaffinity(0, opt.cpu_affinity.size,
+                        opt.cpu_affinity.mask) == -1)
+    perror("could not set CPU affinity");
+
   if (opt.scheduler &&
       sched_setscheduler(0, opt.sched_policy, &((struct sched_param) {})) == -1)
     perror("could not change scheduler policy");

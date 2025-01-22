@@ -133,6 +133,9 @@ See
 .It Fl -scheduler Ar other | batch | idle
 Set the scheduler policy, as per
 .Xr sched_setscheduler 2 .
+.It Fl -cpus Ar START Ns Oo -END Ns Oo :STRIDE Oc Oc Ns Op ,...
+Set CPU affinity in the same format as
+.Xr taskset 1 .
 .It Fl s Ar bytes
 Set soft limit for stack segment size.
 .It Fl a Ar bytes
@@ -300,7 +303,11 @@ Drop user while retaining some capabilities:
 .Dl xchpst -u :500:500 --caps-keep CAP_DAC_OVERRIDE fakeroot /usr/sbin/gpm -D -m /dev/input/mice -t exps2
 .Sh SEE ALSO
 .Xr chpst 8 ,
-.Xr runit 8
+.Xr runit 8 ,
+.Xr unshare 1 ,
+.Xr capsh 1 ,
+.Xr taskset 1,
+.Xr chrt 1
 .Sh HISTORY
 .Nm
 version 0.x has an unstable interface for initial feature development.
