@@ -89,6 +89,7 @@ enum opt /* C23: :int */ {
   OPT_NET_NS,
   OPT_USER_NS,
   OPT_PID_NS,
+  OPT_UTS_NS,
   OPT_NET_ADOPT,
   OPT_PRIVATE_RUN,
   OPT_PRIVATE_TMP,

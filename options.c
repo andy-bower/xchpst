@@ -64,6 +64,7 @@ const struct option_info options_info[] = {
   { C_X, OPT_NET_NS,      '\0', "net-ns",   no_argument,       "create net namespace" },
   { C_X, OPT_USER_NS,     '\0', "user-ns",  no_argument,       "create user namespace" },
   { C_X, OPT_PID_NS,      '\0', "pid-ns",   no_argument,       "create pid namespace" },
+  { C_X, OPT_UTS_NS,      '\0', "uts-ns",   no_argument,       "create uts namespace" },
   { C_X, OPT_NET_ADOPT,   '\0', "adopt-net",required_argument,
     "adopt net namespace", "NS-PATH" },
   { C_X, OPT_PRIVATE_RUN, '\0', "private-run",no_argument,     "create private run dir" },
@@ -431,6 +432,9 @@ static void handle_option(enum compat_level *compat,
     break;
   case OPT_USER_NS:
     opt.new_ns |= CLONE_NEWUSER;
+    break;
+  case OPT_UTS_NS:
+    opt.new_ns |= CLONE_NEWUTS;
     break;
   case OPT_NET_ADOPT:
     opt.net_adopt = optarg;
