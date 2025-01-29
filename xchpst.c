@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: MIT */
-/* SPDX-FileCopyrightText: (c) Copyright 2024 Andrew Bower <andrew@bower.uk> */
+/* SPDX-FileCopyrightText: (c) Copyright 2024,2025 Andrew Bower <andrew@bower.uk> */
 
 /* xchpst: eXtended Change Process State
  * A tool that is backwards compatible with chpst(8) from runit(8),

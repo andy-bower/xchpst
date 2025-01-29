@@ -1,3 +1,13 @@
+xchpst (0.3.0) unstable; urgency=medium
+
+  * Add new options
+    - add --cpus
+    - add --io-nice
+    - add --uts-ns
+  * Restore pre-C23 compat for gcc-12
+
+ -- Andrew Bower <andrew@bower.uk>  Wed, 29 Jan 2025 21:31:36 +0000
+
 xchpst (0.2.1) unstable; urgency=medium
 
   * Enable -Wextra and build cleanly therewith

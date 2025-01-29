@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
-# SPDX-FileCopyrightText: (c) Copyright 2024 Andrew Bower <andrew@bower.uk>
+# SPDX-FileCopyrightText: (c) Copyright 2024,2025 Andrew Bower <andrew@bower.uk>
 
-VERSION ?= 0.2.1
+VERSION ?= 0.3.0
 name := xchpst
 
 prefix ?= /usr/local

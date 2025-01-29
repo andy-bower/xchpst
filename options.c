@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: MIT */
-/* SPDX-FileCopyrightText: (c) Copyright 2024 Andrew Bower <andrew@bower.uk> */
+/* SPDX-FileCopyrightText: (c) Copyright 2024,2025 Andrew Bower <andrew@bower.uk> */
 
 #include <assert.h>
 #include <ctype.h>
