@@ -83,6 +83,8 @@ const struct option_info options_info[] = {
   { C_X, OPT_NO_NEW_PRIVS,'\0', "no-new-privs", no_argument,   "no new privileges" },
   { C_X, OPT_SCHEDULER,   '\0', "scheduler", required_argument,"set scheduler policy", "POLICY" },
   { C_X, OPT_CPUS,        '\0', "cpus",      required_argument,"set CPU affinity", "AFFINITY" },
+  { C_X, OPT_IO_NICE,     '\0', "io-nice",   required_argument,
+    "set I/O scheduling class", "rt|best-effort|idle[:PRIORITY]"},
 };
 #define max_options ((ssize_t) ((sizeof options_info / sizeof *options_info)))
 
@@ -328,6 +330,31 @@ fail:
   fprintf(stderr, "error in CPU list (at %s)\n", tok);
 }
 
+void parse_ionice(char *spec) {
+  const char *classes[] = {
+    "rt", "best-effort", "idle", NULL
+  };
+  long n;
+  int data;
+  char *s = strchrnul(spec, ':');
+  char *end;
+
+  for (n = 0; classes[n] && strncmp(spec, classes[n], s - spec); n++);
+  if (classes[n++] == NULL) {
+    n = strtol(spec, &end, 10);
+    if (end == spec || (*end != '\0' && *end != ':')) {
+      *end = '\0';
+      opt.error = true;
+      fprintf(stderr, "invalid ionice class: %s\n", spec);
+    }
+  }
+  if (*s)
+    s++;
+  data = strtol(s, NULL, 10);
+  opt.ionice = true;
+  opt.ionice_prio = IOPRIO_PRIO_VALUE(n, data);
+}
+
 int sched_policy_from_name(const char *name) {
   if (!strcmp(name, "batch"))
     return SCHED_BATCH;
@@ -455,6 +482,9 @@ static void handle_option(enum compat_level *compat,
     break;
   case OPT_CPUS:
     parse_cpus(optarg);
+    break;
+  case OPT_IO_NICE:
+    parse_ionice(optarg);
     break;
   case OPT_SETUIDGID:
     if (usrgrp_parse(&opt.users_groups, optarg))

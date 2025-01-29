@@ -133,6 +133,9 @@ See
 .It Fl -scheduler Ar other | batch | idle
 Set the scheduler policy, as per
 .Xr sched_setscheduler 2 .
+.It Fl -io-nice Ar rt | best-effort | idle Op :PRIORITY
+Set the I/O scheduler policy, as per
+.Xr ionice 1 .
 .It Fl -cpus Ar START Ns Oo -END Ns Oo :STRIDE Oc Oc Ns Op ,...
 Set CPU affinity in the same format as
 .Xr taskset 1 .

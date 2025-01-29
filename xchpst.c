@@ -22,6 +22,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <linux/prctl.h>
+#include <linux/ioprio.h>
 #include <sys/file.h>
 #include <sys/dir.h>
 #include <sys/mount.h>
@@ -31,6 +32,7 @@
 #include <sys/signalfd.h>
 #include <sys/time.h>
 #include <sys/wait.h>
+#include <sys/syscall.h>
 
 #include "xchpst.h"
 #include "caps.h"
@@ -329,6 +331,16 @@ int main(int argc, char *argv[]) {
     }
     if (is_verbose()) {
       fprintf(stderr, "now at niceness %d\n", newnice);
+    }
+  }
+
+  if (opt.ionice) {
+    if (syscall(SYS_ioprio_set,IOPRIO_WHO_PROCESS, 0, opt.ionice_prio) == -1) {
+      fprintf(stderr, "warning: failed to set I/O scheduling class\n");
+    } else if (is_verbose()) {
+      fprintf(stderr, "set IO class to %d:%ld\n",
+              IOPRIO_PRIO_CLASS(opt.ionice_prio),
+              IOPRIO_PRIO_DATA(opt.ionice_prio));
     }
   }
 

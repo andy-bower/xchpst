@@ -16,6 +16,7 @@
 #include <unistd.h>
 #include <sys/capability.h>
 #include <sys/resource.h>
+#include <linux/ioprio.h>
 
 #include "xchpst.h"
 #include "usrgrp.h"
@@ -102,6 +103,7 @@ enum opt /* C23: :int */ {
   OPT_NO_NEW_PRIVS,
   OPT_SCHEDULER,
   OPT_CPUS,
+  OPT_IO_NICE,
 };
 static_assert(STDIN_FILENO == 0);
 
@@ -168,7 +170,9 @@ struct options {
   bool new_root;
   bool no_new_privs;
   bool scheduler;
+  bool ionice;
   int sched_policy;
+  int ionice_prio;
   const char *lock_file;
   const char *env_dir;
   const char *chroot;
