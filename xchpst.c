@@ -152,9 +152,10 @@ void set_resource_limits(void) {
 
 static const struct app *find_app(const char *name) {
   const struct app *app;
+  const char *ext = strchrnul(name, '.');
 
   for (app = apps;
-       app - apps < max_apps && strcmp(name, app->name);
+       app - apps < max_apps && strncmp(name, app->name, ext - name);
        app++);
 
   return app;
