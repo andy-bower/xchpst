@@ -50,11 +50,7 @@ static const char *default_app = "xchpst";
 #endif
 
 const struct app apps[] = {
-#ifdef STRICT_CHPST_COMPAT
   { COMPAT_CHPST,     "chpst",     .long_opts = false },
-#else
-  { COMPAT_XCHPST,    "chpst",     .long_opts = true },
-#endif
   { COMPAT_XCHPST,    "xchpst",    .long_opts = true },
   { COMPAT_SOFTLIMIT, "softlimit", .long_opts = false },
   { COMPAT_ENVDIR,    "envdir",    false, 1, { OPT_ENVDIR } },
