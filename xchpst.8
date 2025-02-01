@@ -135,12 +135,16 @@ See
 .It Fl -scheduler Ar other | batch | idle
 Set the scheduler policy, as per
 .Xr sched_setscheduler 2 .
-.It Fl -io-nice Ar rt | best-effort | idle Op :PRIORITY
-Set the I/O scheduler policy, as per
+.It Fl -io-nice Ic rt Ns | Ns Ic best-effort Ns | Ns Ic idle Ns Op : Ns Ar priority
+Set the I/O scheduler policy and priority,
+as per
 .Xr ionice 1 .
-.It Fl -cpus Ar START Ns Oo -END Ns Oo :STRIDE Oc Oc Ns Op ,...
+.It Fl -cpus Ar start Ns Oo - Ns Ar end Ns Oo : Ns Ar stride Oc Oc Ns Op ,...
 Set CPU affinity in the same format as
 .Xr taskset 1 .
+.It Fl -umask Ar mode
+Set umask to the octal value
+.Ar mode .
 .It Fl s Ar bytes
 Set soft limit for stack segment size.
 .It Fl a Ar bytes

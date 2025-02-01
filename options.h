@@ -105,6 +105,7 @@ enum opt /* C23: :int */ {
   OPT_SCHEDULER,
   OPT_CPUS,
   OPT_IO_NICE,
+  OPT_UMASK,
 
   /* Keep at end */
   OPT_EXIT,
@@ -193,6 +194,7 @@ struct options {
   cap_bits_t cap_bounds;
   cap_bits_t caps_op;
   cap_bits_t caps;
+  unsigned int umask;
 
   struct {
     cpu_set_t *mask;

@@ -242,6 +242,9 @@ int main(int argc, char *argv[]) {
 
   executable = argv[optind];
 
+  if (set(OPT_UMASK))
+    umask(opt.umask);
+
   if (opt.lock_file) {
     if (opt.lock_nowait_override)
       opt.lock_wait = false;

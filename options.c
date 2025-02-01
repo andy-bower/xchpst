@@ -86,6 +86,7 @@ const struct option_info options_info[] = {
   { C_X, OPT_CPUS,        '\0', "cpus",      required_argument,"set CPU affinity", "AFFINITY" },
   { C_X, OPT_IO_NICE,     '\0', "io-nice",   required_argument,
     "set I/O scheduling class", "rt|best-effort|idle[:PRIORITY]"},
+  { C_X, OPT_UMASK,       '\0', "umask",     required_argument,"set umask", "MODE" },
 };
 #define max_options ((ssize_t) ((sizeof options_info / sizeof *options_info)))
 
@@ -475,6 +476,10 @@ static void handle_option(enum compat_level *compat,
     break;
   case OPT_IO_NICE:
     parse_ionice(optarg);
+    break;
+  case OPT_UMASK:
+    if (sscanf(optarg, "%o", &opt.umask) != 1)
+      opt.error = true;
     break;
   case OPT_SETUIDGID:
     if (usrgrp_parse(&opt.users_groups, optarg))
