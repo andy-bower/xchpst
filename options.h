@@ -52,7 +52,8 @@ static const/*expr*/ enum compat_level C_L = COMPAT_SETLOCK;
 static const/*expr*/ enum compat_level C_ALL = 0377;
 
 enum opt /* C23: :int */ {
-  OPT_SETUIDGID = 0x1000,
+  OPT_BASE = 0x1000,
+  OPT_SETUIDGID = OPT_BASE,
   OPT_ENVUIDGID,
   OPT_ARGV0,
   OPT_ENVDIR,
@@ -84,7 +85,6 @@ enum opt /* C23: :int */ {
   OPT_PGRPHACK,
   OPT_LEGACY,
   OPT_HELP,
-  OPT_EXIT,
   OPT_MOUNT_NS,
   OPT_NET_NS,
   OPT_USER_NS,
@@ -105,6 +105,10 @@ enum opt /* C23: :int */ {
   OPT_SCHEDULER,
   OPT_CPUS,
   OPT_IO_NICE,
+
+  /* Keep at end */
+  OPT_EXIT,
+  _OPT_LAST = OPT_EXIT
 };
 static_assert(STDIN_FILENO == 0);
 
@@ -144,7 +148,13 @@ enum cap_op {
 };
 
 struct options {
+  /* Bitfield of specified options */
+  uint32_t specified[(_OPT_LAST - OPT_BASE + 32) / 32];
+
+  /* Which type of application we are launched as */
   const struct app *app;
+
+  /* Meta stuff */
   bool error;
   bool version;
   bool help;
@@ -156,22 +166,9 @@ struct options {
   char *argv0;
   int new_ns;
   int niceness;
-  bool renice;
-  bool private_run;
-  bool private_tmp;
-  bool protect_home;
-  bool ro_sys;
-  bool setuidgid;
-  bool envuidgid;
   bool lock_wait;
   bool lock_nowait_override;
   bool lock_quiet;
-  bool new_session;
-  bool fork_join;
-  bool new_root;
-  bool no_new_privs;
-  bool scheduler;
-  bool ionice;
   int sched_policy;
   int ionice_prio;
   const char *lock_file;
@@ -211,6 +208,16 @@ static inline bool is_verbose(void) {
 
 static inline bool is_debug(void) {
   return opt.verbosity >= LOG_LEVEL_DEBUG;
+}
+
+static inline bool set(enum opt option) {
+  int index = option - OPT_BASE;
+  return opt.specified[index / 32] & (1 << (index & 31));
+}
+
+static inline void enable(enum opt option) {
+  int index = option - OPT_BASE;
+  opt.specified[index / 32] |= (1 << (index & 31));
 }
 
 bool options_init(void);

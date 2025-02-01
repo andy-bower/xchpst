@@ -352,7 +352,6 @@ void parse_ionice(char *spec) {
   if (*s)
     s++;
   data = strtol(s, NULL, 10);
-  opt.ionice = true;
   opt.ionice_prio = IOPRIO_PRIO_VALUE(n, data);
 }
 
@@ -399,7 +398,6 @@ static void handle_option(enum compat_level *compat,
     opt.chdir = optarg;
     break;
   case OPT_NICE:
-    opt.renice = true;
     opt.niceness = atoi(optarg);
     break;
   case OPT_LOCK_WAIT:
@@ -440,16 +438,14 @@ static void handle_option(enum compat_level *compat,
     opt.net_adopt = optarg;
     break;
   case OPT_PRIVATE_RUN:
-    opt.private_run = true;
-    break;
   case OPT_PRIVATE_TMP:
-    opt.private_tmp = true;
-    break;
   case OPT_PROTECT_HOME:
-    opt.protect_home = true;
-    break;
   case OPT_RO_SYS:
-    opt.ro_sys = true;
+  case OPT_PGRPHACK:
+  case OPT_FORK_JOIN:
+  case OPT_NEW_ROOT:
+  case OPT_NO_NEW_PRIVS:
+    /* Boolean options needing no further option processing */
     break;
   case OPT_CAPBS_KEEP:
     if (!parse_caps(&opt.cap_bounds, optarg))
@@ -471,17 +467,7 @@ static void handle_option(enum compat_level *compat,
       opt.error = true;
     opt.caps_op = CAP_OP_DROP;
     break;
-  case OPT_FORK_JOIN:
-    opt.fork_join = true;
-    break;
-  case OPT_NEW_ROOT:
-    opt.new_root = true;
-    break;
-  case OPT_NO_NEW_PRIVS:
-    opt.no_new_privs = true;
-    break;
   case OPT_SCHEDULER:
-    opt.scheduler = true;
     opt.sched_policy = sched_policy_from_name(optarg);
     break;
   case OPT_CPUS:
@@ -497,7 +483,6 @@ static void handle_option(enum compat_level *compat,
       opt.error = true;
     if (opt.verbosity > 1)
       usrgrp_print(stderr, "setuidgid", &opt.users_groups);
-    opt.setuidgid = true;
     break;
   case OPT_ENVUIDGID:
     if (usrgrp_parse(&opt.env_users_groups, optarg))
@@ -506,7 +491,6 @@ static void handle_option(enum compat_level *compat,
       opt.error = true;
     if (opt.verbosity > 1)
       usrgrp_print(stderr, "envuidgid", &opt.env_users_groups);
-    opt.envuidgid = true;
     break;
   case OPT_LIMIT_MEM:
     if (!(opt.rlimit_memlock.soft_specified = parse_limit(&opt.rlimit_memlock.limits.rlim_cur, optarg))) {
@@ -556,9 +540,6 @@ static void handle_option(enum compat_level *compat,
   case OPT_RLIMIT_CORE:
    if (!(opt.rlimit_core.soft_specified = parse_limit(&opt.rlimit_core.limits.rlim_cur, optarg)))
       opt.error = true;
-    break;
-  case OPT_PGRPHACK:
-      opt.new_session = true;
     break;
   case OPT_CLOSE_STDIN:
   case OPT_CLOSE_STDOUT:
@@ -612,6 +593,9 @@ int options_parse(int argc, char *argv[]) {
       }
       opt.error = true;
     } else {
+      /* Set bitfield before calling handler in case the handler wishes
+       * to reset the option based on argument value. */
+      enable(optdef->option);
       handle_option(&compat, optdef);
     }
   }

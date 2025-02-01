@@ -196,15 +196,15 @@ int main(int argc, char *argv[]) {
   if (is_verbose())
     fprintf(stderr, "invoked as %s(%s)\n", opt.app->name, program_invocation_short_name);
 
-  if (!opt.fork_join &&
+  if (!set(OPT_FORK_JOIN) &&
       (opt.new_ns & CLONE_NEWPID)) {
     if (is_verbose())
       fprintf(stderr, "also going to do fork-join since new PID namespace requested\n");
-    opt.fork_join = true;
+    enable(OPT_FORK_JOIN);
   }
 
   if (!(opt.new_ns & CLONE_NEWNS) &&
-      (opt.new_ns || opt.private_run || opt.private_tmp || opt.ro_sys || opt.new_root)) {
+      (set(OPT_NET_NS) || set(OPT_PRIVATE_RUN) || set(OPT_PRIVATE_TMP) || set(OPT_RO_SYS) || set(OPT_NEW_ROOT))) {
     if (is_verbose())
       fprintf(stderr, "also creating mount namespace implicitly due to other options\n");
     opt.new_ns |= CLONE_NEWNS;
@@ -262,7 +262,7 @@ int main(int argc, char *argv[]) {
   if (opt.argv0)
     sub_argv[0] = opt.argv0;
 
-  if (opt.new_session) {
+  if (set(OPT_PGRPHACK)) {
     rc = setsid();
     if (rc == -1) {
       perror("setsid");
@@ -275,7 +275,7 @@ int main(int argc, char *argv[]) {
   if (opt.env_dir && !read_env_dir(opt.env_dir))
     goto finish;
 
-  if (opt.envuidgid) {
+  if (set(OPT_ENVUIDGID)) {
     struct sys_entry *entry;
     if ((entry = &opt.env_users_groups.user)->resolved) {
       rc = snprintf(extra_env.uid, sizeof extra_env.uid, "UID=%d", entry->uid);
@@ -320,7 +320,7 @@ int main(int argc, char *argv[]) {
       fprintf(stderr, "change directory: %s\n", opt.chdir);
   }
 
-  if (opt.renice) {
+  if (set(OPT_NICE)) {
     int newnice;
 
     errno = 0;
@@ -334,7 +334,7 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  if (opt.ionice) {
+  if (set(OPT_IO_NICE)) {
     if (syscall(SYS_ioprio_set,IOPRIO_WHO_PROCESS, 0, opt.ionice_prio) == -1) {
       fprintf(stderr, "warning: failed to set I/O scheduling class\n");
     } else if (is_verbose()) {
@@ -349,7 +349,7 @@ int main(int argc, char *argv[]) {
                         opt.cpu_affinity.mask) == -1)
     perror("could not set CPU affinity");
 
-  if (opt.scheduler &&
+  if (set(OPT_SCHEDULER) &&
       sched_setscheduler(0, opt.sched_policy, &((struct sched_param) {})) == -1)
     perror("could not change scheduler policy");
 
@@ -364,7 +364,7 @@ int main(int argc, char *argv[]) {
     if (!set_capabilities_bounding_set())
       goto finish;
 
-  if (opt.setuidgid && opt.users_groups.user.resolved) {
+  if (set(OPT_SETUIDGID) && opt.users_groups.user.resolved) {
     /* You do this backwards: supplemental groups first */
     gid_t *groups = malloc(sizeof(gid_t) * opt.users_groups.num_supplemental);
     gid_t gid;
@@ -455,14 +455,14 @@ int main(int argc, char *argv[]) {
     if (opt.verbosity > 0) fprintf(stderr, "adopted net ns\n");
   }
 
-  if (opt.new_root) {
+  if (set(OPT_NEW_ROOT)) {
     if (!create_new_root(executable, &new_root, &old_root))
       goto finish;
   }
 
   set_resource_limits();
 
-  if (opt.fork_join) {
+  if (set(OPT_FORK_JOIN)) {
     /* Save old signal mask for re-use by child and block all signals
      * in the parent so we can get them delivered by signalfd. */
     sigfillset(&newmask);
@@ -496,33 +496,33 @@ int main(int argc, char *argv[]) {
       perror("mounting proc in new ns");
   }
 
-  if (opt.new_root) {
+  if (set(OPT_NEW_ROOT)) {
     if (!pivot_to_new_root(new_root, old_root))
       goto finish;
     else
       in_new_root = true;
   }
 
-  if (!opt.new_root) {
+  if (!set(OPT_NEW_ROOT)) {
     if (opt.new_ns & CLONE_NEWPID)
       special_mount("/proc", "proc", "procfs", NULL);
   }
 
-  if (opt.private_run)
+  if (set(OPT_PRIVATE_RUN))
     private_mount("/run");
 
-  if (opt.private_tmp) {
+  if (set(OPT_PRIVATE_TMP)) {
     private_mount("/tmp");
     private_mount("/var/tmp");
   }
 
-  if (opt.protect_home) {
+  if (set(OPT_PROTECT_HOME)) {
     private_mount("/home");
     private_mount("/root");
     private_mount("/run/user");
   }
 
-  if (opt.ro_sys) {
+  if (set(OPT_RO_SYS)) {
     remount_sys_ro();
   }
 
@@ -533,7 +533,7 @@ int main(int argc, char *argv[]) {
   for (unsigned int close_fds = opt.close_fds; close_fds; close_fds &= ~(1 << fd))
     close(fd = /*stdc_trailing_zeros*/ __builtin_ctz(close_fds));
 
-  if (opt.no_new_privs && prctl(PR_SET_NO_NEW_PRIVS, 1L, 0L, 0L, 0L) == -1)
+  if (set(OPT_NO_NEW_PRIVS) && prctl(PR_SET_NO_NEW_PRIVS, 1L, 0L, 0L, 0L) == -1)
     perror("could not honour --no-new-privs");
 
   /* Launch the target */
@@ -544,7 +544,7 @@ int main(int argc, char *argv[]) {
   perror(NAME_STR ": execvp");
 
 join:
-  if (opt.fork_join && child != 0)
+  if (set(OPT_FORK_JOIN) && child != 0)
     join(child, &newmask, &oldmask, &ret);
 
 finish:
