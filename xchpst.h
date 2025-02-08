@@ -31,4 +31,6 @@ struct runtime {
 
 extern struct runtime runtime;
 
+extern int get_run_dir(void);
+
 #endif

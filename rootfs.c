@@ -180,10 +180,12 @@ bool create_new_root(const char *executable,
   bool success = false;
   int rc;
 
+  get_run_dir();
   gettimeofday(&t, NULL);
   /* basename(3) promises that with _GNU_SOURCE defined, its argument is
      unmodified. */
-  rc = asprintf(&new_root, "/tmp/xchpst-rootfs-%lld-%d-%s",
+  rc = asprintf(&new_root, "%s/rootfs-%lld-%d-%s",
+                "/run/xchpst",
                 (long long) t.tv_sec, getpid(), basename((char *)executable));
   if (rc == -1) {
     perror("formatting new root");
@@ -212,6 +214,11 @@ bool pivot_to_new_root(char *new_root, char *old_root) {
   bool success = false;
   int rc;
 
+  if (chdir(new_root) == -1)
+    perror("chdir to new root");
+  else
+    success = true;
+
   rc = pivot_root(new_root, old_root);
   if (rc == -1) {
     fprintf(stderr, "could not pivot %s to new root %s, %s\n",
@@ -227,10 +234,12 @@ bool pivot_to_new_root(char *new_root, char *old_root) {
   else
     success = true;
 
+  chroot(".");
+
   {
-    /* FIXME: Try to remove new root from parent fs. This does not seem
-     * to be possible without using fork-join in order to do so from
-     * within the parent namespace. */
+    /* FIXME: To remove the new root from the parent fs we will need to fork
+     * before changing mount namespace. Leaking an empty directory in /run
+     * will be a good trade-off for now. */
     char *path;
     rc = asprintf(&path, "/.old_root%s", new_root);
     if (rc == -1 || umount2(path, MNT_DETACH))

@@ -48,6 +48,7 @@ static const char *default_app = STRINGIFY(PROG_DEFAULT);
 #else
 static const char *default_app = "xchpst";
 #endif
+#define PROG "xchpst"
 
 const struct app apps[] = {
   { COMPAT_CHPST,     "chpst",     .long_opts = false },
@@ -62,6 +63,9 @@ const struct app apps[] = {
 #define max_apps ((ssize_t) (sizeof apps / (sizeof *apps)))
 
 struct runtime runtime = {};
+
+static const char *run_dir_path = "/run/" PROG;
+static int run_dir_fd = -1;
 
 static struct {
   char uid[16];
@@ -82,6 +86,21 @@ static void usage(FILE *out) {
   fprintf(out, " PROG...    launch PROG with changed process state\n");
   options_explain_positional(out);
   options_print(out);
+}
+
+void ensure_dir(int dirfd, const char *path, int *fd, mode_t mode) {
+  for (int creating = 0; *fd == -1 && creating <= 1; creating++) {
+    *fd = openat(dirfd, path, O_DIRECTORY, O_RDWR);
+    if (*fd == -1 && !creating && (errno == ENOENT))
+      mkdirat(dirfd, path, mode);
+  }
+  if (*fd == -1)
+    perror("mkdir");
+}
+
+int get_run_dir(void) {
+  ensure_dir(-1, run_dir_path, &run_dir_fd, 0700);
+  return run_dir_fd;
 }
 
 static int write_once(const char *file, const char *fmt, ...) {
@@ -193,6 +212,12 @@ int main(int argc, char *argv[]) {
   if (is_verbose())
     fprintf(stderr, "invoked as %s(%s)\n", opt.app->name, program_invocation_short_name);
 
+  if (!set(OPT_PRIVATE_RUN) && set(OPT_NEW_ROOT)) {
+    if (is_verbose())
+      fprintf(stderr, "also going to do create private /run for new root fs\n");
+    enable(OPT_PRIVATE_RUN);
+  }
+
   if (!set(OPT_FORK_JOIN) &&
       (opt.new_ns & CLONE_NEWPID)) {
     if (is_verbose())
@@ -293,31 +318,6 @@ int main(int argc, char *argv[]) {
       }
       putenv(extra_env.gid);
     }
-  }
-
-  if (opt.chroot) {
-    rc = chdir(opt.chroot);
-    if (rc == -1) {
-      perror("chdir for chroot");
-      goto finish;
-    }
-    rc = chroot(".");
-    if (rc == -1) {
-      perror("chroot");
-      goto finish;
-    }
-    if (is_verbose())
-      fprintf(stderr, "entered chroot: %s\n", opt.chroot);
-  }
-
-  if (opt.chdir) {
-    rc = chdir(opt.chdir);
-    if (rc == -1) {
-      perror("chdir");
-      goto finish;
-    }
-    if (is_verbose())
-      fprintf(stderr, "change directory: %s\n", opt.chdir);
   }
 
   if (set(OPT_NICE)) {
@@ -489,6 +489,10 @@ int main(int argc, char *argv[]) {
     }
   }
 
+  /*************************************
+   *  Inside child if fork-join used   *
+   *************************************/
+
   if (opt.new_ns & CLONE_NEWPID &&
       special_mounts[SPECIAL_PROC]) {
     rc = mount("none", special_mounts[SPECIAL_PROC]->to, "proc", 0, NULL);
@@ -501,6 +505,31 @@ int main(int argc, char *argv[]) {
       goto finish;
     else
       in_new_root = true;
+  }
+
+  if (opt.chroot) {
+    rc = chdir(opt.chroot);
+    if (rc == -1) {
+      perror("chdir for chroot");
+      goto finish;
+    }
+    rc = chroot(".");
+    if (rc == -1) {
+      perror("chroot");
+      goto finish;
+    }
+    if (is_verbose())
+      fprintf(stderr, "entered chroot: %s\n", opt.chroot);
+  }
+
+  if (opt.chdir) {
+    rc = chdir(opt.chdir);
+    if (rc == -1) {
+      perror("chdir");
+      goto finish;
+    }
+    if (is_verbose())
+      fprintf(stderr, "change directory: %s\n", opt.chdir);
   }
 
   if (!set(OPT_NEW_ROOT)) {
@@ -561,6 +590,9 @@ finish:
       fprintf(stderr, "rmdir(%s): %s\n", new_root, strerror(errno));
     free_rootfs_data();
   }
+
+  if (run_dir_fd != -1)
+    close(run_dir_fd);
 
   if (lock_fd != -1)
     close(lock_fd);
