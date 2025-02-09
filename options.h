@@ -106,6 +106,11 @@ enum opt /* C23: :int */ {
   OPT_CPUS,
   OPT_IO_NICE,
   OPT_UMASK,
+  OPT_APP,
+  OPT_RUN_DIR,
+  OPT_STATE_DIR,
+  OPT_CACHE_DIR,
+  OPT_LOG_DIR,
 
   /* Keep at end */
   OPT_EXIT,
@@ -165,6 +170,7 @@ struct options {
 
   /* The interesting (x)chpsty stuff here */
   char *argv0;
+  char *app_name;
   int new_ns;
   int niceness;
   bool lock_wait;

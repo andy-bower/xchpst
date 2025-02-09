@@ -41,6 +41,7 @@
 #include "options.h"
 #include "rootfs.h"
 #include "mount.h"
+#include "precreate.h"
 
 static const char *version_str = STRINGIFY(PROG_VERSION);
 #ifdef PROG_DEFAULT
@@ -90,7 +91,7 @@ static void usage(FILE *out) {
 
 void ensure_dir(int dirfd, const char *path, int *fd, mode_t mode) {
   for (int creating = 0; *fd == -1 && creating <= 1; creating++) {
-    *fd = openat(dirfd, path, O_DIRECTORY, O_RDWR);
+    *fd = openat(dirfd, path, O_DIRECTORY | O_CLOEXEC);
     if (*fd == -1 && !creating && (errno == ENOENT))
       mkdirat(dirfd, path, mode);
   }
@@ -214,7 +215,7 @@ int main(int argc, char *argv[]) {
 
   if (!set(OPT_PRIVATE_RUN) && set(OPT_NEW_ROOT)) {
     if (is_verbose())
-      fprintf(stderr, "also going to do create private /run for new root fs\n");
+      fprintf(stderr, "also going to create private /run for new root fs\n");
     enable(OPT_PRIVATE_RUN);
   }
 
@@ -286,6 +287,9 @@ int main(int argc, char *argv[]) {
 
   if (opt.argv0)
     sub_argv[0] = opt.argv0;
+
+  if (opt.app_name == NULL)
+    opt.app_name = basename(sub_argv[0]);
 
   if (set(OPT_PGRPHACK)) {
     rc = setsid();
@@ -456,7 +460,7 @@ int main(int argc, char *argv[]) {
   }
 
   if (set(OPT_NEW_ROOT)) {
-    if (!create_new_root(executable, &new_root, &old_root))
+    if (!create_new_root(basename(executable), &new_root, &old_root))
       goto finish;
   }
 
@@ -550,6 +554,18 @@ int main(int argc, char *argv[]) {
     private_mount("/root");
     private_mount("/run/user");
   }
+
+  if (set(OPT_RUN_DIR))
+    precreate_dir("/run", 0755);
+
+  if (set(OPT_STATE_DIR))
+    precreate_dir("/var/lib", 0755);
+
+  if (set(OPT_CACHE_DIR))
+    precreate_dir("/var/cache", 0755);
+
+  if (set(OPT_LOG_DIR))
+    precreate_dir("/var/log", 0755);
 
   if (set(OPT_RO_SYS)) {
     remount_sys_ro();

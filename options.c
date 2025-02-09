@@ -67,8 +67,8 @@ const struct option_info options_info[] = {
   { C_X, OPT_UTS_NS,      '\0', "uts-ns",   no_argument,       "create uts namespace" },
   { C_X, OPT_NET_ADOPT,   '\0', "adopt-net",required_argument,
     "adopt net namespace", "NS-PATH" },
-  { C_X, OPT_PRIVATE_RUN, '\0', "private-run",no_argument,     "create private run dir" },
-  { C_X, OPT_PRIVATE_TMP, '\0', "private-tmp",no_argument,     "create private tmp dir" },
+  { C_X, OPT_PRIVATE_RUN, '\0', "private-run",no_argument,     "create private /run" },
+  { C_X, OPT_PRIVATE_TMP, '\0', "private-tmp",no_argument,     "create private /tmp" },
   { C_X, OPT_PROTECT_HOME,'\0', "protect-home",no_argument,    "protect home directories" },
   { C_X, OPT_RO_SYS,      '\0', "ro-sys",     no_argument,     "create read only system" },
   { C_X, OPT_CAPBS_KEEP,  '\0', "cap-bs-keep",required_argument,
@@ -87,6 +87,11 @@ const struct option_info options_info[] = {
   { C_X, OPT_IO_NICE,     '\0', "io-nice",   required_argument,
     "set I/O scheduling class", "rt|best-effort|idle[:PRIORITY]"},
   { C_X, OPT_UMASK,       '\0', "umask",     required_argument,"set umask", "MODE" },
+  { C_X, OPT_APP,         '\0', "app",       required_argument,"define application name", "NAME"},
+  { C_X, OPT_RUN_DIR,     '\0', "run-dir",   no_argument,      "create run dir" },
+  { C_X, OPT_STATE_DIR,   '\0', "state-dir", no_argument,      "create state dir" },
+  { C_X, OPT_CACHE_DIR,   '\0', "cache-dir", no_argument,      "create cache dir" },
+  { C_X, OPT_LOG_DIR,     '\0', "log-dir",   no_argument,      "create log dir" },
 };
 #define max_options ((ssize_t) ((sizeof options_info / sizeof *options_info)))
 
@@ -446,6 +451,10 @@ static void handle_option(enum compat_level *compat,
   case OPT_FORK_JOIN:
   case OPT_NEW_ROOT:
   case OPT_NO_NEW_PRIVS:
+  case OPT_RUN_DIR:
+  case OPT_STATE_DIR:
+  case OPT_CACHE_DIR:
+  case OPT_LOG_DIR:
     /* Boolean options needing no further option processing */
     break;
   case OPT_CAPBS_KEEP:
@@ -480,6 +489,9 @@ static void handle_option(enum compat_level *compat,
   case OPT_UMASK:
     if (sscanf(optarg, "%o", &opt.umask) != 1)
       opt.error = true;
+    break;
+  case OPT_APP:
+    opt.app_name = optarg;
     break;
   case OPT_SETUIDGID:
     if (usrgrp_parse(&opt.users_groups, optarg))
