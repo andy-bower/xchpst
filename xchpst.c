@@ -227,7 +227,8 @@ int main(int argc, char *argv[]) {
   }
 
   if (!(opt.new_ns & CLONE_NEWNS) &&
-      (set(OPT_NET_NS) || set(OPT_PRIVATE_RUN) || set(OPT_PRIVATE_TMP) || set(OPT_RO_SYS) || set(OPT_NEW_ROOT))) {
+      (set(OPT_NET_NS) || set(OPT_PRIVATE_RUN) || set(OPT_PRIVATE_TMP) ||
+       set(OPT_RO_SYS) || set(OPT_NEW_ROOT) || set(OPT_PID_NS))) {
     if (is_verbose())
       fprintf(stderr, "also creating mount namespace implicitly due to other options\n");
     opt.new_ns |= CLONE_NEWNS;
@@ -452,13 +453,6 @@ int main(int argc, char *argv[]) {
    *  Inside child if fork-join used   *
    *************************************/
 
-  if (opt.new_ns & CLONE_NEWPID &&
-      special_mounts[SPECIAL_PROC]) {
-    rc = mount("none", special_mounts[SPECIAL_PROC]->to, "proc", 0, NULL);
-    if (rc == -1)
-      perror("mounting proc in new ns");
-  }
-
   if (set(OPT_NEW_ROOT)) {
     if (!pivot_to_new_root(new_root, old_root))
       goto finish;
@@ -491,9 +485,9 @@ int main(int argc, char *argv[]) {
       fprintf(stderr, "change directory: %s\n", opt.chdir);
   }
 
-  if (!set(OPT_NEW_ROOT)) {
-    if (opt.new_ns & CLONE_NEWPID)
-      special_mount("/proc", "proc", "procfs", NULL);
+  if (set(OPT_NEW_ROOT) ||
+      opt.new_ns & CLONE_NEWPID) {
+    special_mount("/proc", "proc", "procfs", NULL);
   }
 
   if (set(OPT_PRIVATE_RUN))
