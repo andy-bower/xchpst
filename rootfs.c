@@ -231,10 +231,10 @@ bool pivot_to_new_root(char *new_root, char *old_root) {
 
   if (chdir("/") == -1)
     perror("chdir to new root");
+  else if (chroot(".") == -1)
+    perror("chroot to pivotted root");
   else
     success = true;
-
-  chroot(".");
 
   {
     /* FIXME: To remove the new root from the parent fs we will need to fork
