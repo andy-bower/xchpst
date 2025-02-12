@@ -250,7 +250,7 @@ bool parse_caps(cap_bits_t *caps, char *names) {
 
   if (max_cap < 0) {
     /* Record that we don't have capabilities but don't fail option */
-    runtime.ok.caps = false;
+    runtime.absent.caps = true;
     return true;
   }
 

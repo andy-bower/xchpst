@@ -26,7 +26,7 @@ enum chpst_exit {
 struct runtime {
   struct {
     bool caps;
-  } ok;
+  } absent;
 };
 
 extern struct runtime runtime;

@@ -63,7 +63,7 @@ const struct app apps[] = {
 };
 #define max_apps ((ssize_t) (sizeof apps / (sizeof *apps)))
 
-struct runtime runtime = {};
+struct runtime runtime = { 0 };
 
 static const char *run_dir_path = "/run/" PROG;
 static int run_dir_fd = -1;
@@ -360,7 +360,7 @@ int main(int argc, char *argv[]) {
 
   if ((opt.cap_bounds_op != CAP_OP_NONE ||
        opt.caps_op != CAP_OP_NONE) &&
-      !runtime.ok.caps) {
+      runtime.absent.caps) {
     fprintf(stderr, "ignoring capabilities as not supported on system");
     opt.cap_bounds_op = opt.caps_op = CAP_OP_NONE;
   }
