@@ -15,7 +15,7 @@ xchpst (0.4.0) unstable; urgency=medium
   * Move new roots to under /run/xchpst instead of /tmp
   * When running in chpst-emulation mode, only accept chpst options
 
- -- Andrew Bower <andrew@bower.uk>  Wed, 12 Feb 2025 07:32:32 +0000
+ -- Andrew Bower <andrew@bower.uk>  Wed, 12 Feb 2025 20:19:56 +0000
 
 xchpst (0.3.0) unstable; urgency=medium
 
