@@ -235,7 +235,7 @@ int main(int argc, char *argv[]) {
   }
 
   if (opt.exit) {
-    ret = opt.retcode;
+    ret = opt.error ? CHPST_ERROR_OPTIONS : opt.retcode;
     goto finish0;
   }
 
