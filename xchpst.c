@@ -213,12 +213,6 @@ int main(int argc, char *argv[]) {
   if (is_verbose())
     fprintf(stderr, "invoked as %s(%s)\n", opt.app->name, program_invocation_short_name);
 
-  if (!set(OPT_PRIVATE_RUN) && set(OPT_NEW_ROOT)) {
-    if (is_verbose())
-      fprintf(stderr, "also going to create private /run for new root fs\n");
-    enable(OPT_PRIVATE_RUN);
-  }
-
   if (!set(OPT_FORK_JOIN) &&
       (opt.new_ns & CLONE_NEWPID)) {
     if (is_verbose())
@@ -410,6 +404,58 @@ int main(int argc, char *argv[]) {
   if (opt.app_name == NULL)
     opt.app_name = basename(sub_argv[0]);
 
+  {
+    uid_t o = set(OPT_SETUIDGID) ? uid : (uid_t) -1;
+    gid_t g = set(OPT_SETUIDGID) ? gid : (gid_t) -1;
+
+    if (set(OPT_RUN_DIR))
+      precreate_dir("/run", 0755, o, g);
+
+    if (set(OPT_STATE_DIR))
+      precreate_dir("/var/lib", 0755, o, g);
+
+    if (set(OPT_CACHE_DIR))
+      precreate_dir("/var/cache", 0755, o, g);
+
+    if (set(OPT_LOG_DIR))
+      precreate_dir("/var/log", 0755, o, g);
+  }
+
+  if (set(OPT_SETUIDGID) && opt.users_groups.user.resolved) {
+    /* You do this backwards: supplemental groups first */
+    gid_t *groups = malloc(sizeof(gid_t) * opt.users_groups.num_supplemental);
+
+    if (opt.caps_op != CAP_OP_NONE) {
+      /* Postpone the loss of capabilities until after the user switch
+       * and drop them when ready. */
+      rc = prctl(PR_SET_KEEPCAPS, 1);
+    }
+
+    if (!groups) goto finish;
+    for (i = 0; i < opt.users_groups.num_supplemental; i++)
+      groups[i] = opt.users_groups.supplemental[i].gid;
+    rc = (setgroups(i, groups) == -1 ? errno : 0);
+    free(groups);
+    if (rc) {
+      perror("setgroups");
+      goto finish;
+    }
+
+    /* Then main group */
+    rc = setresgid(gid, gid, gid);
+    if (rc) {
+      perror("setresgid");
+      goto finish;
+    }
+
+    /* Then the actual user */
+    rc = setresuid(uid, uid, uid);
+    if (rc) {
+      perror("setresgid");
+      goto finish;
+    }
+  }
+
   if (opt.new_ns) {
     rc = unshare(opt.new_ns);
     if (rc == -1) {
@@ -427,6 +473,17 @@ int main(int argc, char *argv[]) {
 
     if (opt.new_ns & CLONE_NEWNET)
       special_mount("/sys", "sysfs", "sysfs", NULL);
+  }
+
+  if (opt.new_ns & CLONE_NEWUSER) {
+    rc = prctl(PR_SET_DUMPABLE, 1);
+    setgroups(0, NULL);
+    write_once("/proc/self/setgroups", "%s", "deny\n");
+    write_once("/proc/self/gid_map", "%u %u %u\n", 0, gid, 1);
+    write_once("/proc/self/uid_map", "%u %u %u\n", 0, uid, 1);
+    if (setresgid(0, 0, 0) != 0 ||
+        setresuid(0, 0, 0) != 0)
+      fprintf(stderr, "warning: error becoming root in user namespace, %s\n", strerror(errno));
   }
 
   if (opt.net_adopt) {
@@ -537,72 +594,8 @@ int main(int argc, char *argv[]) {
     private_mount("/run/user");
   }
 
-  {
-    uid_t o = set(OPT_SETUIDGID) ? uid : (uid_t) -1;
-    gid_t g = set(OPT_SETUIDGID) ? gid : (gid_t) -1;
-
-    if (set(OPT_RUN_DIR))
-      precreate_dir("/run", 0755, o, g);
-
-    if (set(OPT_STATE_DIR))
-      precreate_dir("/var/lib", 0755, o, g);
-
-    if (set(OPT_CACHE_DIR))
-      precreate_dir("/var/cache", 0755, o, g);
-
-    if (set(OPT_LOG_DIR))
-      precreate_dir("/var/log", 0755, o, g);
-  }
-
   if (set(OPT_RO_SYS)) {
     remount_sys_ro();
-  }
-
-  if (set(OPT_SETUIDGID) && opt.users_groups.user.resolved) {
-    /* You do this backwards: supplemental groups first */
-    gid_t *groups = malloc(sizeof(gid_t) * opt.users_groups.num_supplemental);
-
-    if (opt.caps_op != CAP_OP_NONE) {
-      /* Postpone the loss of capabilities until after the user switch
-       * and drop them when ready. */
-      rc = prctl(PR_SET_KEEPCAPS, 1);
-    }
-
-    if (!groups) goto finish;
-    for (i = 0; i < opt.users_groups.num_supplemental; i++)
-      groups[i] = opt.users_groups.supplemental[i].gid;
-    rc = (setgroups(i, groups) == -1 ? errno : 0);
-    free(groups);
-    if (rc) {
-      perror("setgroups");
-      goto finish;
-    }
-
-    /* Then main group */
-    rc = setresgid(gid, gid, gid);
-    if (rc) {
-      perror("setresgid");
-      goto finish;
-    }
-
-    /* Then the actual user */
-    rc = setresuid(uid, uid, uid);
-    if (rc) {
-      perror("setresgid");
-      goto finish;
-    }
-  }
-  if (opt.new_ns & CLONE_NEWUSER) {
-    rc = prctl(PR_SET_DUMPABLE, 1);
-    if (uid != 0 || gid != 0) {
-      setgroups(0, NULL);
-      write_once("/proc/self/setgroups", "%s", "deny\n");
-      write_once("/proc/self/gid_map", "%u %u %u\n", 0, gid, 1);
-      write_once("/proc/self/uid_map", "%u %u %u\n", 0, uid, 1);
-    }
-    if (setresgid(0, 0, 0) != 0 ||
-        setresuid(0, 0, 0) != 0)
-      fprintf(stderr, "warning: error becoming root in user namespace, %s\n", strerror(errno));
   }
 
   if (opt.caps_op != CAP_OP_NONE)
