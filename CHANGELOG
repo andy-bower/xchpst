@@ -9,7 +9,7 @@ xchpst (0.4.0) unstable; urgency=medium
   * Add --umask option
   * Add --login to set login environment and run shell if no command specified
   * Fix tracking of capabilities being present
-  * Return options error 110 with --exit when appropriate.
+  * Return options error 100 with --exit when appropriate.
     (Creates an option check mode)
   * Create necessary mount ns with pid ns
   * Move new roots to under /run/xchpst instead of /tmp

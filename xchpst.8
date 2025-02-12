@@ -42,11 +42,11 @@ areas and read-only
 The extra options provided by
 .Nm
 are as follows:
-.Bl -tag -width mmmbytes
+.Bl -tag -width mmmbytesxxxxxx
 .It Fl -help
 Show help text and usage.
 .It Fl -exit Ns Op = Ns Ar retcode
-Exit immediately with exit status 0, or
+Exit immediately with exit status 0 if the given options are supported.
 .Ar retcode
 if specified.
 .It Fl -mount-ns
@@ -145,6 +145,30 @@ Set CPU affinity in the same format as
 .It Fl -umask Ar mode
 Set umask to the octal value
 .Ar mode .
+.It Fl -app Ar name
+Override program name used for pre-creating system directories.
+.It Fl -run-dir
+Create a directory for the program under
+.Pa /run ,
+owned by the appropriate user.
+.It Fl -state-dir
+Create a directory for the program under
+.Pa /var/lib ,
+owned by the appropriate user.
+.It Fl -log-dir
+Create a directory for the program under
+.Pa /run ,
+owned by the appropriate user.
+.It Fl -cache-dir
+Create a directory for the program under
+.Pa /var/cache ,
+owned by the appropriate user.
+.It Fl -login
+Create a login environment, using the user specified by -u, -U or the current
+user, in order of preference.
+If this option is specified and no command is specified to be executed,
+then the shell defined for the given user is launched, instead of an error
+being returned.
 .It Fl s Ar bytes
 Set soft limit for stack segment size.
 .It Fl a Ar bytes
@@ -278,7 +302,8 @@ The default exit status when
 .Fl -exit
 is specified is 0. This can be used for a quick test that
 .Nm
-is available on the system in shell scripts.
+is available on the system in shell scripts and that the given options
+are supported.
 .It 100
 The return code when an invalid option or option argument is specified,
 including if a username cannot be resolved, for example.
@@ -310,6 +335,20 @@ Drop a capability from the bounding set:
 .Pp
 Drop user while retaining some capabilities:
 .Dl xchpst -u :500:500 --caps-keep CAP_DAC_OVERRIDE fakeroot /usr/sbin/gpm -D -m /dev/input/mice -t exps2
+.Ss Diagnostics
+To see what is going on, including options enabled implicitly due to other options,
+add the
+.Ql --verbose
+option.
+.Pp
+Use
+.Ql --login
+without a command name to explore the hardened environment from a shell.
+.Pp
+You can enter the created namespaces (but not other aspects of hardening),
+including any synthesised root filesystem,
+by identifying the process id of the hardened application and running:
+.Dl nsenter -a -t PID
 .Sh SEE ALSO
 .Xr chpst 8 ,
 .Xr runit 8 ,
