@@ -72,7 +72,27 @@ int usrgrp_parse(struct users_groups *ug, const char *arg) {
   return 0;
 }
 
-static int resolve_user(struct sys_entry *entry) {
+void usrgrp_resolve_uid(struct users_groups *ug, uid_t nid) {
+  struct sys_entry *entry = &ug->user;
+  struct passwd *password;
+
+  entry->tok_type = TOK_ID;
+  entry->uid = nid;
+  entry->resolved = true;
+  password = getpwuid(entry->uid);
+  if (password) {
+    entry->user_gid = password->pw_gid;
+    ug->username = strdup(password->pw_name);
+    ug->home = strdup(password->pw_dir);
+    ug->shell = strdup(password->pw_shell);
+  } else {
+    entry->user_gid = (gid_t) -1;
+    ug->username = ug->home = ug->shell = NULL;
+  }
+}
+
+static int resolve_user(struct users_groups *ug) {
+  struct sys_entry *entry = &ug->user;
   struct passwd *password;
   int toks = 0;
   int rc = 0;
@@ -91,6 +111,9 @@ static int resolve_user(struct sys_entry *entry) {
       entry->uid = password->pw_uid;
       entry->user_gid = password->pw_gid;
       entry->resolved = true;
+      ug->username = strdup(password->pw_name);
+      ug->home = strdup(password->pw_dir);
+      ug->shell = strdup(password->pw_shell);
     } else {
       rc = ENOENT;
       if (errno != 0) {
@@ -100,19 +123,13 @@ static int resolve_user(struct sys_entry *entry) {
       entry->uid = (uid_t) -1;
       entry->user_gid = (gid_t) -1;
       entry->resolved = false;
+      ug->username = ug->home = ug->shell = NULL;
     }
     break;
   case TOK_ID:
     toks = sscanf(entry->tok, "%ld", &nid);
     if (toks == 1) {
-      entry->uid = nid;
-      entry->resolved = true;
-      password = getpwuid(entry->uid);
-      if (password) {
-        entry->user_gid = password->pw_gid;
-      } else {
-        entry->user_gid = (gid_t) -1;
-      }
+      usrgrp_resolve_uid(ug, nid);
     } else {
       entry->resolved = false;
     }
@@ -207,7 +224,7 @@ int usrgrp_resolve(struct users_groups *ug) {
   int errors = 0;
   int i;
 
-  if (resolve_user(&ug->user))
+  if (resolve_user(ug))
     errors++;
   if (resolve_group(&ug->group))
     errors++;
@@ -228,6 +245,9 @@ int usrgrp_resolve(struct users_groups *ug) {
 }
 
 void usrgrp_free(struct users_groups *ug) {
+  free(ug->home);
+  free(ug->shell);
+  free(ug->username);
   if (ug->buf_tok)
     free(ug->buf_tok);
   if (ug->supplemental)

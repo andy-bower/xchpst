@@ -111,6 +111,7 @@ enum opt /* C23: :int */ {
   OPT_STATE_DIR,
   OPT_CACHE_DIR,
   OPT_LOG_DIR,
+  OPT_LOGIN,
 
   /* Keep at end */
   OPT_EXIT,

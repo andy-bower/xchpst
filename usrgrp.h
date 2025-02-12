@@ -30,8 +30,12 @@ struct users_groups {
   struct sys_entry group;
   struct sys_entry *supplemental;
   ssize_t num_supplemental;
+
   /* Buffers to be freed */
   void *buf_tok;
+  char *username;
+  char *home;
+  char *shell;
 };
 
 static inline bool usrgrp_specified(const struct sys_entry *entry) {
@@ -40,6 +44,7 @@ static inline bool usrgrp_specified(const struct sys_entry *entry) {
 
 int usrgrp_parse(struct users_groups *ug, const char *arg);
 int usrgrp_resolve(struct users_groups *ug);
+void usrgrp_resolve_uid(struct users_groups *ug, uid_t nid);
 void usrgrp_print(FILE *out, const char *what, struct users_groups *ug);
 void usrgrp_free(struct users_groups *ug);
 

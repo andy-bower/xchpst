@@ -249,7 +249,7 @@ int main(int argc, char *argv[]) {
     goto finish0;
   }
 
-  if (optind == argc)
+  if (optind == argc && !set(OPT_LOGIN))
     opt.error = true;
 
   if (opt.error) {
@@ -260,11 +260,11 @@ int main(int argc, char *argv[]) {
 
   /* Do xchpsty-type things now! */
   sub_argc = argc - optind;
+  if (sub_argc == 0)
+    sub_argc++;
   sub_argv = malloc((sub_argc + 1) * sizeof *sub_argv);
-  memcpy(sub_argv, argv + optind, sub_argc * sizeof *sub_argv);
+  memcpy(sub_argv, argv + optind, (argc - optind) * sizeof *sub_argv);
   sub_argv[sub_argc] = NULL;
-
-  executable = argv[optind];
 
   if (set(OPT_UMASK))
     umask(opt.umask);
@@ -285,12 +285,6 @@ int main(int argc, char *argv[]) {
       goto finish;
     }
   }
-
-  if (opt.argv0)
-    sub_argv[0] = opt.argv0;
-
-  if (opt.app_name == NULL)
-    opt.app_name = basename(sub_argv[0]);
 
   if (set(OPT_PGRPHACK)) {
     rc = setsid();
@@ -376,6 +370,45 @@ int main(int argc, char *argv[]) {
     uid = getuid();
     gid = getgid();
   }
+
+  /* Set a login environment */
+  if (set(OPT_LOGIN)) {
+    struct users_groups *ug = NULL;
+    struct users_groups current = { 0 };
+
+    /* Prefer -u, -U then current user, but if the preferred choice
+     * is not resolved then we don't set a login environment, rather
+     * than picking an unpredictable one. */
+    if (set(OPT_SETUIDGID))
+      ug = &opt.users_groups;
+    else if (set(OPT_ENVUIDGID))
+      ug = &opt.env_users_groups;
+    else
+      usrgrp_resolve_uid(ug = &current, getuid());
+
+    if (ug->user.resolved) {
+      if (ug->username && *ug->username) {
+        setenv("USER", ug->username, 1);
+        setenv("LOGNAME", ug->username, 1);
+      }
+      if (ug->home && *ug->home) {
+        setenv("HOME", ug->home, 1);
+      }
+      if (ug->shell && *ug->shell) {
+        setenv("SHELL", ug->shell, 1);
+      }
+    }
+  }
+
+  if (argc == optind)
+    sub_argv[0] = getenv("SHELL");
+
+  executable = sub_argv[0];
+  if (opt.argv0)
+    sub_argv[0] = opt.argv0;
+
+  if (opt.app_name == NULL)
+    opt.app_name = basename(sub_argv[0]);
 
   if (opt.new_ns) {
     rc = unshare(opt.new_ns);
