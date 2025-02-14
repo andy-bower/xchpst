@@ -29,6 +29,9 @@ int special_mount(char *path, char *fs, char *desc, char *options) {
     op = "mount";
     rc = mount(NULL, path, fs,
                MS_NODEV | MS_NOEXEC | MS_NOSUID, options);
+    if (rc == -1)
+      fprintf(stderr, "error mounting special: %s (%s) to %s, %s\n",
+              path, fs, desc, strerror(errno));
   } else
     if (rc == -1)
       fprintf(stderr, "in creating %s mount: %s: %s, %s\n",
