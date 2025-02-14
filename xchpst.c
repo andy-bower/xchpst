@@ -599,8 +599,7 @@ int main(int argc, char *argv[]) {
       fprintf(stderr, "change directory: %s\n", opt.chdir);
   }
 
-  if (set(OPT_NEW_ROOT) ||
-      opt.new_ns & CLONE_NEWPID) {
+  if (opt.new_ns & CLONE_NEWPID) {
     special_mount("/proc", "proc", "procfs", NULL);
   }
 
