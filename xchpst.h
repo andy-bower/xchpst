@@ -30,6 +30,7 @@ struct runtime {
 };
 
 extern struct runtime runtime;
+extern char *run_dir;
 
 extern int get_run_dir(void);
 

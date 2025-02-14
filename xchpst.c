@@ -65,8 +65,10 @@ const struct app apps[] = {
 
 struct runtime runtime = { 0 };
 
-static const char *run_dir_path = "/run/" PROG;
+static const char *std_run_dir = "/run/" PROG;
+static const char *fallback_run_dir = "/tmp/run-" PROG;
 static int run_dir_fd = -1;
+char *run_dir;
 
 static struct {
   char uid[16];
@@ -89,18 +91,40 @@ static void usage(FILE *out) {
   options_print(out);
 }
 
-void ensure_dir(int dirfd, const char *path, int *fd, mode_t mode) {
+int ensure_dir(int dirfd, const char *path, int *fd, mode_t mode) {
   for (int creating = 0; *fd == -1 && creating <= 1; creating++) {
     *fd = openat(dirfd, path, O_DIRECTORY | O_CLOEXEC);
     if (*fd == -1 && !creating && (errno == ENOENT))
       mkdirat(dirfd, path, mode);
   }
   if (*fd == -1 && errno != EEXIST)
-    perror("mkdir");
+    return -1;
+  return 0;
 }
 
 int get_run_dir(void) {
-  ensure_dir(-1, run_dir_path, &run_dir_fd, 0700);
+  int rc = ensure_dir(-1, std_run_dir, &run_dir_fd, 0700);
+  if (rc == -1) {
+    char *xdg_run_dir = getenv("XDG_RUNTIME_DIR");
+    if (xdg_run_dir) {
+      char *path;
+      rc = asprintf(&path, "%s/%s", xdg_run_dir, PROG);
+      if (rc != -1) {
+        rc = ensure_dir(-1, path, &run_dir_fd, 0700);
+        if (rc != -1) {
+          run_dir = path;
+        } else {
+          free(path);
+        }
+      }
+    }
+  } else {
+    run_dir = strdup(std_run_dir);
+  }
+  if (rc == -1 &&
+      ensure_dir(-1, fallback_run_dir, &run_dir_fd, 0700) != -1)
+    run_dir = strdup(fallback_run_dir);
+
   return run_dir_fd;
 }
 
@@ -643,6 +667,7 @@ finish:
   free(new_root);
   free(old_root);
   free(sub_argv);
+  free(run_dir);
 
 finish0:
   options_free();

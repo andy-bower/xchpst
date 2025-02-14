@@ -180,12 +180,13 @@ bool create_new_root(const char *executable,
   bool success = false;
   int rc;
 
-  get_run_dir();
+  if (get_run_dir() == -1)
+    return false;
   gettimeofday(&t, NULL);
   /* basename(3) promises that with _GNU_SOURCE defined, its argument is
      unmodified. */
   rc = asprintf(&new_root, "%s/rootfs-%lld-%d-%s",
-                "/run/xchpst",
+                run_dir,
                 (long long) t.tv_sec, getpid(), basename((char *)executable));
   if (rc == -1) {
     perror("formatting new root");
