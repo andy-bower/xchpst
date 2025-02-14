@@ -179,13 +179,21 @@ bool create_new_root(const char *executable,
   struct timeval t = { 0 };
   bool success = false;
   int rc;
+  int run_dir_fd;
+  int roots_dir_fd = -1;
 
-  if (get_run_dir() == -1)
+  run_dir_fd = get_run_dir();
+  if (run_dir_fd == -1)
     return false;
+
+  if (ensure_dir(run_dir_fd, "roots", &roots_dir_fd, 0700) == -1)
+    return false;
+  close(roots_dir_fd);
+
   gettimeofday(&t, NULL);
   /* basename(3) promises that with _GNU_SOURCE defined, its argument is
      unmodified. */
-  rc = asprintf(&new_root, "%s/rootfs-%lld-%d-%s",
+  rc = asprintf(&new_root, "%s/roots/%lld-%d-%s",
                 run_dir,
                 (long long) t.tv_sec, getpid(), basename((char *)executable));
   if (rc == -1) {

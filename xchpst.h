@@ -32,6 +32,7 @@ struct runtime {
 extern struct runtime runtime;
 extern char *run_dir;
 
+extern int ensure_dir(int dirfd, const char *path, int *fd, mode_t mode);
 extern int get_run_dir(void);
 
 #endif
