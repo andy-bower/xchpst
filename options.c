@@ -93,6 +93,7 @@ const struct option_info options_info[] = {
   { C_X, OPT_CACHE_DIR,   '\0', "cache-dir", no_argument,      "create cache dir" },
   { C_X, OPT_LOG_DIR,     '\0', "log-dir",   no_argument,      "create log dir" },
   { C_X, OPT_LOGIN,       '\0', "login",     no_argument,      "simulate login environment" },
+  { C_X, OPT_OOM,         '\0', "oom",       required_argument,"set oom adjust value", "ADJ" },
 };
 #define max_options ((ssize_t) ((sizeof options_info / sizeof *options_info)))
 
@@ -375,6 +376,8 @@ int sched_policy_from_name(const char *name) {
 
 static void handle_option(enum compat_level *compat,
                           const struct option_info *optdef) {
+  char *end;
+
   switch (optdef->option) {
   case OPT_LEGACY:
     *compat = COMPAT_CHPST;
@@ -490,6 +493,11 @@ static void handle_option(enum compat_level *compat,
     break;
   case OPT_UMASK:
     if (sscanf(optarg, "%o", &opt.umask) != 1)
+      opt.error = true;
+    break;
+  case OPT_OOM:
+    opt.oom_adjust = strtol(optarg, &end, 10);
+    if (*optarg == '\0' || *end != '\0')
       opt.error = true;
     break;
   case OPT_APP:

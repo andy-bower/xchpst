@@ -112,6 +112,7 @@ enum opt /* C23: :int */ {
   OPT_CACHE_DIR,
   OPT_LOG_DIR,
   OPT_LOGIN,
+  OPT_OOM,
 
   /* Keep at end */
   OPT_EXIT,
@@ -202,6 +203,7 @@ struct options {
   cap_bits_t caps_op;
   cap_bits_t caps;
   unsigned int umask;
+  long oom_adjust;
 
   struct {
     cpu_set_t *mask;

@@ -177,6 +177,9 @@ user, in order of preference.
 If this option is specified and no command is specified to be executed,
 then the shell defined for the given user is launched, instead of an error
 being returned.
+.It Fl -oom Ar adjustment
+Set the out-of-memory (OOM) score adjustment to
+.Ar adjustment .
 .It Fl s Ar bytes
 Set soft limit for stack segment size.
 .It Fl a Ar bytes
@@ -362,8 +365,10 @@ by identifying the process id of the hardened application and running:
 .Xr runit 8 ,
 .Xr unshare 1 ,
 .Xr capsh 1 ,
-.Xr taskset 1,
-.Xr chrt 1
+.Xr taskset 1 ,
+.Xr chrt 1 ,
+.Xr choom 1 ,
+.Xr proc_pid_oom_score_adj 5
 .Sh HISTORY
 .Nm
 version 0.x has an unstable interface for initial feature development.

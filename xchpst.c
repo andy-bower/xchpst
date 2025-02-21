@@ -287,6 +287,9 @@ int main(int argc, char *argv[]) {
   if (set(OPT_UMASK))
     umask(opt.umask);
 
+  if (set(OPT_OOM))
+    write_once("/proc/self/oom_score_adj", "%ld", opt.oom_adjust);
+
   if (opt.lock_file) {
     if (opt.lock_nowait_override)
       opt.lock_wait = false;
