@@ -286,6 +286,30 @@ Close stout.
 .It Fl 2
 Close stderr.
 .El
+.Ss Resource limit options
+The resource limit options above take a parameter in one of the following forms:
+.Bl -tag -width mmmmbytes
+.It Ar soft
+Set only the soft limit, in the style of
+.Nm chpst
+and
+.Nm softlimit .
+.It Ar soft :
+Set only the soft limit, in the style of
+.Xr prlimit 1 .
+.It Ar soft : Ns Ar hard
+Set soft and hard limits.
+.It : Ns Ar hard
+Set only the hard limit.
+.It + Ns Ar both
+Set both soft and hard limits.
+.El
+.Pp
+An unlimited limit may be selected by any value of
+.Ql -1 ,
+.Ql unlimited
+or
+.Ql infinity .
 .Ss Emulating ancestor tools
 When invoked as
 .Nm chpst ,
@@ -368,7 +392,9 @@ by identifying the process id of the hardened application and running:
 .Xr taskset 1 ,
 .Xr chrt 1 ,
 .Xr choom 1 ,
-.Xr proc_pid_oom_score_adj 5
+.Xr proc_pid_oom_score_adj 5 ,
+.Xr prlimit 1 ,
+.Xr prlimit 2
 .Sh HISTORY
 .Nm
 version 0.x has an unstable interface for initial feature development.

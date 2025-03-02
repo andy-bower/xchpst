@@ -162,21 +162,28 @@ fail0:
 void set_rlimit(int resource, struct limit *option) {
   struct rlimit prev;
 
-  if (option->soft_specified) {
-    if (getrlimit(resource, &prev) == 0) {
-      if (option->limits.rlim_cur != RLIM_INFINITY &&
-          option->limits.rlim_cur > prev.rlim_max) {
-        fprintf(stderr, "warning capping requested %d soft limit from %lld to maximum %lld\n",
-                resource, (long long) option->limits.rlim_cur, (long long) prev.rlim_max);
-        prev.rlim_cur = prev.rlim_max;
-      } else {
-        prev.rlim_cur = option->limits.rlim_cur;
-      }
-      if (setrlimit(resource, &prev) != 0) {
-        fprintf(stderr, "warning: failed to set %d soft limit\n", resource);
-      }
-    } else {
+  if (option->soft_specified || option->hard_specified) {
+    if (getrlimit(resource, &prev) != 0) {
       fprintf(stderr, "warning: resource type %d cannot be controlled on this kernel\n", resource);
+      return;
+    }
+  }
+
+  if (option->hard_specified)
+    prev.rlim_max = option->limits.rlim_max;
+
+  if (option->soft_specified) {
+    if (option->limits.rlim_cur != RLIM_INFINITY &&
+        option->limits.rlim_max != RLIM_INFINITY &&
+        option->limits.rlim_cur > prev.rlim_max) {
+      fprintf(stderr, "warning capping requested %d soft limit from %lld to maximum %lld\n",
+              resource, (long long) option->limits.rlim_cur, (long long) prev.rlim_max);
+      prev.rlim_cur = prev.rlim_max;
+    } else {
+      prev.rlim_cur = option->limits.rlim_cur;
+    }
+    if (setrlimit(resource, &prev) != 0) {
+      fprintf(stderr, "warning: failed to set type %d soft limit\n", resource);
     }
   }
 }

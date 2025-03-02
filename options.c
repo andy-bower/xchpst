@@ -244,6 +244,35 @@ bool parse_limit(rlim_t *lim, const char *arg) {
   return toks == 1 ? true : false;
 }
 
+/* SUPPORTED FORMATS
+ *   soft    (this differs from prlimit to match chpst)
+ *   soft:
+ *   soft:hard
+ *   :hard
+ *   +both   (this is unique to xchpst)
+ */
+bool parse_limits(struct limit *limit, const char *arg) {
+  char *sep;
+  bool both = *arg == '+';
+
+  if (both)
+    arg++;
+
+  sep = strchr(arg, ':');
+  if (sep != NULL) {
+    *sep++ = '\0';
+    limit->hard_specified = parse_limit(&limit->limits.rlim_max, sep);
+  }
+  if (arg != sep) {
+    limit->soft_specified = parse_limit(&limit->limits.rlim_cur, arg);
+  }
+  if (both) {
+    limit->limits.rlim_max = limit->limits.rlim_cur;
+    limit->hard_specified = limit->soft_specified;
+  }
+  return limit->soft_specified || limit->hard_specified;
+}
+
 bool parse_caps(cap_bits_t *caps, char *names) {
   cap_bits_t set = 0;
   cap_value_t val;
@@ -522,7 +551,7 @@ static void handle_option(enum compat_level *compat,
       usrgrp_print(stderr, "envuidgid", &opt.env_users_groups);
     break;
   case OPT_LIMIT_MEM:
-    if (!(opt.rlimit_memlock.soft_specified = parse_limit(&opt.rlimit_memlock.limits.rlim_cur, optarg))) {
+    if (!parse_limits(&opt.rlimit_memlock, optarg)) {
       opt.error = true;
     } else {
       opt.rlimit_data = opt.rlimit_memlock;
@@ -531,43 +560,43 @@ static void handle_option(enum compat_level *compat,
     }
     break;
    case OPT_RLIMIT_DATA:
-    if (!(opt.rlimit_data.soft_specified = parse_limit(&opt.rlimit_data.limits.rlim_cur, optarg)))
+    if (!parse_limits(&opt.rlimit_data, optarg))
       opt.error = true;
     break;
   case OPT_RLIMIT_MEMLOCK:
-    if (!(opt.rlimit_memlock.soft_specified = parse_limit(&opt.rlimit_memlock.limits.rlim_cur, optarg)))
+    if (!parse_limits(&opt.rlimit_memlock, optarg))
       opt.error = true;
     break;
   case OPT_RLIMIT_AS:
-    if (!(opt.rlimit_as.soft_specified = parse_limit(&opt.rlimit_as.limits.rlim_cur, optarg)))
+    if (!parse_limits(&opt.rlimit_as, optarg))
       opt.error = true;
     break;
   case OPT_RLIMIT_STACK:
-    if (!(opt.rlimit_stack.soft_specified = parse_limit(&opt.rlimit_stack.limits.rlim_cur, optarg)))
+    if (!parse_limits(&opt.rlimit_stack, optarg))
       opt.error = true;
     break;
   case OPT_RLIMIT_NOFILE:
-    if (!(opt.rlimit_nofile.soft_specified = parse_limit(&opt.rlimit_nofile.limits.rlim_cur, optarg)))
+    if (!parse_limits(&opt.rlimit_nofile, optarg))
       opt.error = true;
     break;
   case OPT_RLIMIT_RSS:
-    if (!(opt.rlimit_rss.soft_specified = parse_limit(&opt.rlimit_rss.limits.rlim_cur, optarg)))
+    if (!parse_limits(&opt.rlimit_rss, optarg))
       opt.error = true;
     break;
   case OPT_RLIMIT_NPROC:
-    if (!(opt.rlimit_nproc.soft_specified = parse_limit(&opt.rlimit_nproc.limits.rlim_cur, optarg)))
+    if (!parse_limits(&opt.rlimit_nproc, optarg))
       opt.error = true;
     break;
   case OPT_RLIMIT_FSIZE:
-   if (!(opt.rlimit_fsize.soft_specified = parse_limit(&opt.rlimit_fsize.limits.rlim_cur, optarg)))
+    if (!parse_limits(&opt.rlimit_fsize, optarg))
       opt.error = true;
     break;
   case OPT_RLIMIT_CPU:
-   if (!(opt.rlimit_cpu.soft_specified = parse_limit(&opt.rlimit_cpu.limits.rlim_cur, optarg)))
+    if (!parse_limits(&opt.rlimit_cpu, optarg))
       opt.error = true;
     break;
   case OPT_RLIMIT_CORE:
-   if (!(opt.rlimit_core.soft_specified = parse_limit(&opt.rlimit_core.limits.rlim_cur, optarg)))
+   if (!parse_limits(&opt.rlimit_core, optarg))
       opt.error = true;
     break;
   case OPT_CLOSE_STDIN:
