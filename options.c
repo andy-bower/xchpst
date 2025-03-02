@@ -223,7 +223,9 @@ bool parse_limit(rlim_t *lim, const char *arg) {
   int toks = 0;
   long long val;
 
-  if (!strcmp(arg, "unlimited")) {
+  if (!strcmp(arg, "unlimited") ||
+      !strcmp(arg, "infinity") ||
+      !strcmp(arg, "=")) {
     *lim = RLIM_INFINITY;
     toks = 1;
   } else {
