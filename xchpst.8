@@ -184,8 +184,18 @@ Set the out-of-memory (OOM) score adjustment to
 Set soft limit for stack segment size.
 .It Fl a Ar bytes
 Set soft limit for address space size.
-.It Fl -memlock Ar bytes
+.It Fl -limit-memlock Ar bytes
 Set soft limit for amount of locked memory.
+.It Fl -limit-msgqueue Ar bytes
+Set soft limit for message queue space for this user.
+.It Fl -limit-nice Ar niceness
+Set 20 minus the minimum niceness possible for this process.
+.It Fl -limit-rtptio Ar prio
+Set soft limit for real time priority of the process.
+.It Fl -limit-rttime Ar ms
+Set soft limit for amount of real time processing between blocking system calls.
+.It Fl -limit-sigpending Ar number
+Set soft limit for the number of pending signals permitted for the process.
 .It Fl @
 Switches to chpst-compatible option handling only for the remaining
 options. This is to support scripts that can convert an

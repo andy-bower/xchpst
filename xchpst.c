@@ -167,6 +167,8 @@ void set_rlimit(int resource, struct limit *option) {
       fprintf(stderr, "warning: resource type %d cannot be controlled on this kernel\n", resource);
       return;
     }
+  } else {
+    return;
   }
 
   if (option->hard_specified)
@@ -182,9 +184,10 @@ void set_rlimit(int resource, struct limit *option) {
     } else {
       prev.rlim_cur = option->limits.rlim_cur;
     }
-    if (setrlimit(resource, &prev) != 0) {
-      fprintf(stderr, "warning: failed to set type %d soft limit\n", resource);
-    }
+  }
+
+  if (setrlimit(resource, &prev) != 0) {
+    fprintf(stderr, "warning: failed to set type %d soft limit\n", resource);
   }
 }
 
@@ -199,6 +202,11 @@ void set_resource_limits(void) {
   set_rlimit(RLIMIT_FSIZE, &opt.rlimit_fsize);
   set_rlimit(RLIMIT_CORE, &opt.rlimit_core);
   set_rlimit(RLIMIT_CPU, &opt.rlimit_cpu);
+  set_rlimit(RLIMIT_MSGQUEUE, &opt.rlimit_msgqueue);
+  set_rlimit(RLIMIT_NICE, &opt.rlimit_nice);
+  set_rlimit(RLIMIT_RTPRIO, &opt.rlimit_rtprio);
+  set_rlimit(RLIMIT_RTTIME, &opt.rlimit_rttime);
+  set_rlimit(RLIMIT_SIGPENDING, &opt.rlimit_sigpending);
 }
 
 static const struct app *find_app(const char *name) {

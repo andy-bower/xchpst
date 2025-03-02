@@ -38,17 +38,22 @@ const struct option_info options_info[] = {
   { C_L, OPT_LOCKOPT_QUIET,'x', NULL,       no_argument,       "fail silently" },
   { C_RS,OPT_LIMIT_MEM,   'm',  NULL,       required_argument,
     "set soft DATA, STACK, MEMLOCK and AS limits", "BYTES" },
-  { C_RS,OPT_RLIMIT_DATA, 'd',  NULL,       required_argument, "set soft RLIMIT_DATA", "BYTES" },
-  { C_XS,OPT_RLIMIT_STACK,'s',  NULL,       required_argument, "set soft RLIMIT_STACK", "BYTES" },
-  { C_S, OPT_RLIMIT_MEMLOCK,'l', NULL,      required_argument, "set soft RLIMIT_MEMLOCK", "BYTES" },
-  { C_X, OPT_RLIMIT_MEMLOCK,'\0',"memlock", required_argument, "set soft RLIMIT_MEMLOCK", "BYTES" },
-  { C_XS,OPT_RLIMIT_AS,   'a',  NULL,       required_argument, "set soft RLIMIT_AS", "BYTES" },
-  { C_RS,OPT_RLIMIT_NOFILE,'o', NULL,       required_argument, "set soft RLIMIT_NOFILE", "FILES" },
-  { C_RS,OPT_RLIMIT_NPROC,'p',  NULL,       required_argument, "set soft RLIMIT_NPROC", "PROCS" },
-  { C_RS,OPT_RLIMIT_FSIZE,'f',  NULL,       required_argument, "set soft RLIMIT_FSIZE", "BYTES" },
-  { C_RS,OPT_RLIMIT_CORE, 'c',  NULL,       required_argument, "set soft RLIMIT_CORE", "BYTES" },
-  { C_XS,OPT_RLIMIT_RSS,  'r',  NULL,       required_argument, "set soft RLIMIT_RSS", "BYTES" },
-  { C_RS,OPT_RLIMIT_CPU,  't',  NULL,       required_argument, "set soft RLIMIT_CPU", "SECONDS" },
+  { C_RS,OPT_RLIMIT_DATA, 'd',  NULL,       required_argument, "set RLIMIT_DATA", "BYTES" },
+  { C_XS,OPT_RLIMIT_STACK,'s',  NULL,       required_argument, "set RLIMIT_STACK", "BYTES" },
+  { C_S, OPT_RLIMIT_MEMLOCK,'l', NULL,      required_argument, "set RLIMIT_MEMLOCK", "BYTES" },
+  { C_XS,OPT_RLIMIT_AS,   'a',  NULL,       required_argument, "set RLIMIT_AS", "BYTES" },
+  { C_RS,OPT_RLIMIT_NOFILE,'o', NULL,       required_argument, "set RLIMIT_NOFILE", "FILES" },
+  { C_RS,OPT_RLIMIT_NPROC,'p',  NULL,       required_argument, "set RLIMIT_NPROC", "PROCS" },
+  { C_RS,OPT_RLIMIT_FSIZE,'f',  NULL,       required_argument, "set RLIMIT_FSIZE", "BYTES" },
+  { C_RS,OPT_RLIMIT_CORE, 'c',  NULL,       required_argument, "set RLIMIT_CORE", "BYTES" },
+  { C_XS,OPT_RLIMIT_RSS,  'r',  NULL,       required_argument, "set RLIMIT_RSS", "BYTES" },
+  { C_RS,OPT_RLIMIT_CPU,  't',  NULL,       required_argument, "set RLIMIT_CPU", "SECONDS" },
+  { C_X, OPT_RLIMIT_MEMLOCK,'\0',"limit-memlock", required_argument, "set RLIMIT_MEMLOCK", "BYTES" },
+  { C_X, OPT_RLIMIT_MSGQUEUE, '\0', "limit-msgqueue", required_argument, "set RLIMIT_MSGQUEUE", "BYTES" },
+  { C_X, OPT_RLIMIT_NICE, '\0', "limit-nice", required_argument, "set RLIMIT_NICE", "NICENESS" },
+  { C_X, OPT_RLIMIT_RTPRIO, '\0', "limit-rtprio", required_argument, "set RLIMIT_RTPRIO", "PRIO" },
+  { C_X, OPT_RLIMIT_RTTIME, '\0', "limit-rttime", required_argument, "set RLIMIT_RTTIME", "MS" },
+  { C_X, OPT_RLIMIT_SIGPENDING, '\0', "limit-sigpending", required_argument, "set RLIMIT_SIGPENDING", "NUM" },
   { C_ALL,OPT_VERBOSE,    'v',  "verbose",  no_argument,       "be verbose" },
   { C_R, OPT_VERSION,     'V',  "version",  no_argument,       "show " NAME_STR " version" },
   { C_R, OPT_PGRPHACK,    'P',  NULL,       no_argument,       "run in new process group" },
@@ -596,7 +601,27 @@ static void handle_option(enum compat_level *compat,
       opt.error = true;
     break;
   case OPT_RLIMIT_CORE:
-   if (!parse_limits(&opt.rlimit_core, optarg))
+    if (!parse_limits(&opt.rlimit_core, optarg))
+      opt.error = true;
+    break;
+  case OPT_RLIMIT_MSGQUEUE:
+    if (!parse_limits(&opt.rlimit_msgqueue, optarg))
+      opt.error = true;
+    break;
+  case OPT_RLIMIT_NICE:
+    if (!parse_limits(&opt.rlimit_nice, optarg))
+      opt.error = true;
+    break;
+  case OPT_RLIMIT_RTPRIO:
+    if (!parse_limits(&opt.rlimit_rtprio, optarg))
+      opt.error = true;
+    break;
+  case OPT_RLIMIT_RTTIME:
+    if (!parse_limits(&opt.rlimit_rttime, optarg))
+      opt.error = true;
+    break;
+  case OPT_RLIMIT_SIGPENDING:
+    if (!parse_limits(&opt.rlimit_sigpending, optarg))
       opt.error = true;
     break;
   case OPT_CLOSE_STDIN:

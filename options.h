@@ -77,6 +77,11 @@ enum opt /* C23: :int */ {
   OPT_RLIMIT_CORE,
   OPT_RLIMIT_RSS,
   OPT_RLIMIT_CPU,
+  OPT_RLIMIT_MSGQUEUE,
+  OPT_RLIMIT_NICE,
+  OPT_RLIMIT_RTPRIO,
+  OPT_RLIMIT_RTTIME,
+  OPT_RLIMIT_SIGPENDING,
   OPT_CLOSE_STDIN,
   OPT_CLOSE_STDOUT = OPT_CLOSE_STDIN + STDOUT_FILENO - STDIN_FILENO,
   OPT_CLOSE_STDERR = OPT_CLOSE_STDIN + STDERR_FILENO - STDIN_FILENO,
@@ -197,6 +202,11 @@ struct options {
   struct limit rlimit_fsize;
   struct limit rlimit_core;
   struct limit rlimit_cpu;
+  struct limit rlimit_msgqueue;
+  struct limit rlimit_nice;
+  struct limit rlimit_rtprio;
+  struct limit rlimit_rttime;
+  struct limit rlimit_sigpending;
   unsigned close_fds;
   enum cap_op cap_bounds_op;
   cap_bits_t cap_bounds;
