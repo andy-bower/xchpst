@@ -45,6 +45,12 @@ are as follows:
 .Bl -tag -width mmmbytesxx
 .It Fl -help
 Show help text and usage.
+.It Fl -file Ar file
+Read options from
+.Ar file .
+See
+.Sx Options file
+for the file format.
 .It Fl -exit Ns Op = Ns Ar retcode
 Exit immediately with exit status 0 if the given options are supported.
 .Ar retcode
@@ -340,6 +346,25 @@ packages respectively.
 As an additional feature, all these tools when so invoked, accept the
 .Fl v
 option to increase verbosity.
+.Ss Options file
+An options file specifies additional options to apply,
+one option per line.
+Each line begins with an option name.
+Options that take an argument have horizontal white space and the
+option value following the option name.
+Comments begin with a
+.Ql #
+character and may only be preceded by whitespace,
+otherwise they will be interpreted as part of an option name or value.
+.Pp
+Example options file:
+.Bd -literal -offset indent -compact
+# Comment line
+private-tmp
+app my app
+run-dir
+pid-ns
+.Ed
 .Sh EXIT STATUS
 .Bl -tag -width Ds
 .It 0 

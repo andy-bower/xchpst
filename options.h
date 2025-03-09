@@ -90,6 +90,7 @@ enum opt /* C23: :int */ {
   OPT_PGRPHACK,
   OPT_LEGACY,
   OPT_HELP,
+  OPT_FILE,
   OPT_MOUNT_NS,
   OPT_NET_NS,
   OPT_USER_NS,
@@ -160,7 +161,15 @@ enum cap_op {
   CAP_OP_DROP,
 };
 
+struct options_file {
+  struct options_file *next;
+  char content[];
+};
+
 struct options {
+  /* Linked list of options files */
+  struct options_file *opt_files;
+
   /* Bitfield of specified options */
   uint32_t specified[(_OPT_LAST - OPT_BASE + 32) / 32];
 

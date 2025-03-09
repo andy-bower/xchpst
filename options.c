@@ -5,6 +5,7 @@
 #include <ctype.h>
 #include <getopt.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <sched.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -12,6 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 
 #include "options.h"
@@ -63,6 +65,7 @@ const struct option_info options_info[] = {
   { C_X, OPT_LEGACY,      '@',  NULL,       no_argument,
     "restricts following options to chpst(8) ones" },
   { C_X, OPT_HELP,        'h',  "help",     no_argument,       "show help" },
+  { C_X, OPT_FILE,        '\0', "file",     required_argument, "read options from file", "FILE" },
   { C_X, OPT_EXIT,        '\0', "exit",     optional_argument,
     "exit (with optional RETCODE)", "RETCODE" },
   { C_X, OPT_MOUNT_NS,    '\0', "mount-ns", no_argument,       "create mount namespace" },
@@ -104,6 +107,10 @@ const struct option_info options_info[] = {
 
 static struct option options[max_options + 1];
 static char optstr[max_options * 2];
+
+static void handle_option(enum compat_level *compat,
+                          const struct option_info *optdef,
+                          char *optarg);
 
 void options_print(FILE *out) {
   const struct option_info *optdef;
@@ -410,8 +417,213 @@ int sched_policy_from_name(const char *name) {
   return SCHED_OTHER;
 }
 
+static const struct option_info *find_option(int by_code,
+                                             const char *by_name) {
+  const struct option_info *optdef;
+  const struct option_info *incompatible_option = NULL;
+  enum compat_level compat = opt.app->compat_level;
+  bool is_short = (by_code && isascii(by_code)) ||
+                  (by_name && *by_name && by_name[1] == '\0');
+
+  /* Look up option definition */
+  for (optdef = options_info;
+       optdef - options_info < max_options;
+       optdef++) {
+
+    if ((by_code && by_code == (is_short ? optdef->short_name : (int) optdef->option)) ||
+        (by_name && (is_short ? *by_name == optdef->short_name : optdef->long_name && !strcmp(by_name, optdef->long_name)))) {
+      if ((optdef->compat_level & compat) == 0) {
+        /* Tentatively found an incompatible option but there may be
+         * another one that is compatible later in the list. */
+        incompatible_option = optdef;
+      } else {
+        incompatible_option = NULL;
+        break;
+      }
+    }
+  }
+
+  if (optdef - options_info == max_options)
+    return incompatible_option;
+  else
+    return optdef;
+}
+
+static void read_options_file(const char *path) {
+  struct options_file *opt_file;
+  struct stat statbuf;
+  int fd;
+  int rc;
+  off_t offset;
+  char *ptr;
+  char *option_name = NULL;
+  char *option_name_end = NULL;
+  char *option_value = NULL;
+  char *option_value_end = NULL;
+  ssize_t len;
+  const struct option_info *optdef;
+  enum compat_level compat = opt.app->compat_level;
+  enum {
+    S_LEADING_WSP,
+    S_COMMENT,
+    /* No states above are actionable on EOF */
+    /* All states below are actionable on EOF */
+    S_KEY,
+    S_DELIM_WSP,
+    S_VALUE,
+    S_POSSIBLY_TRAILING_WSP,
+  } state = S_LEADING_WSP;
+
+  fd = open(path, O_RDONLY);
+  if (fd == -1) {
+    fprintf(stderr, "error opening options file %s: %s\n", path, strerror(errno));
+    goto fail;
+  }
+
+  rc = fstat(fd, &statbuf);
+  if (rc == -1) {
+    close(fd);
+    goto fail;
+  }
+
+  /* We allocate the space for the file permanently, just as the argv array
+     remains allocated. Option processing modifies argument values.
+     Add one for NUL-terminating last element if not a newline. */
+  opt_file = malloc(sizeof *opt_file + statbuf.st_size + 1);
+  if (opt_file == NULL) {
+    close(fd);
+    goto fail;
+  }
+
+  opt_file->next = opt.opt_files;
+  opt.opt_files = opt_file;
+
+  offset = 0;
+  do {
+    len = read(fd, opt_file->content + offset, statbuf.st_size - offset);
+    if (len == -1) {
+      close(fd);
+      goto fail;
+    }
+    offset += len;
+  } while (offset < statbuf.st_size);
+  close(fd);
+
+  ptr = opt_file->content;
+  for (ptr = opt_file->content; ptr - opt_file->content < statbuf.st_size; ptr++) {
+    char c = *ptr;
+
+    /* Whether a key and value are now completely specified */
+    bool action = false;
+
+    switch (state) {
+    case S_LEADING_WSP:
+      if (c == '#') {
+        state = S_COMMENT;
+      } else if (!isspace(c)) {
+        option_name = ptr;
+        state = S_KEY;
+      }
+      break;
+    case S_KEY:
+      if (c == '\n') {
+        action = true;
+      } else if (isspace(c)) {
+        state = S_DELIM_WSP;
+      }
+      option_name_end = ptr;
+      break;
+    case S_DELIM_WSP:
+      if (c == '\n') {
+        action = true;
+      } else if (!isspace(c)) {
+        option_value = ptr;
+        state = S_VALUE;
+      }
+      break;
+    case S_VALUE:
+      if (c == '\n') {
+        action = true;
+      } else if (isspace(c)) {
+        state = S_POSSIBLY_TRAILING_WSP;
+      }
+      option_value_end = ptr;
+      break;
+    case S_POSSIBLY_TRAILING_WSP:
+      if (c == '\n') {
+        action = true;
+      } else if (!isspace(c)) {
+        state = S_VALUE;
+        option_value_end = ptr;
+      }
+      break;
+    case S_COMMENT:
+      if (c == '\n') {
+        state = S_LEADING_WSP;
+      }
+      break;
+    }
+
+    if (action /* EOL */ ||
+        (ptr + 1 == opt_file->content + statbuf.st_size /* EOF */ &&
+         state >= S_KEY /* An actionable state */)) {
+      if (!action) {
+        /* If EOF then there is no EOL character to overwrite */
+        if (option_value)
+          option_value_end = ptr + 1;
+        else
+          option_name_end = ptr + 1;
+      }
+      *option_name_end = '\0';
+      if (option_value)
+        *option_value_end = '\0';
+
+      state = S_LEADING_WSP;
+    } else {
+      continue;
+    }
+
+    optdef = find_option(0, option_name);
+
+    if (optdef && (optdef->compat_level & compat) == 0) {
+      char short_name[2] = { optdef->short_name, 0};
+      fprintf(stderr, "illegal option (%s) at this compat level\n",
+              optdef->long_name ? optdef->long_name : short_name);
+      opt.error = true;
+      continue;
+    } else if (!optdef) {
+      fprintf(stderr, "unknown option in config file: %s\n", option_name);
+      opt.error = true;
+      continue;
+    }
+
+    if (is_verbose())
+      fprintf(stderr, "handling file option '%s' with value '%s'\n", option_name, option_value);
+
+    enable(optdef->option);
+
+    /* For now, throw away the value end pointer. In future we could use
+       this to enable arguments containing NUL bytes to be handled.
+       (Of course, this format cannot handle newline characters, which would
+       probably be more useful to embed!) */
+    handle_option(&compat, optdef,
+                  optdef->has_arg == no_argument ? NULL : option_value);
+    option_value = NULL;
+  }
+
+  if (errno != 0) {
+    fprintf(stderr, "error reading options file %s: %s\n", path, strerror(errno));
+    goto fail;
+  }
+
+  return;
+fail:
+   opt.error = true;
+}
+
 static void handle_option(enum compat_level *compat,
-                          const struct option_info *optdef) {
+                          const struct option_info *optdef,
+                          char *optarg) {
   char *end;
 
   switch (optdef->option) {
@@ -423,6 +635,9 @@ static void handle_option(enum compat_level *compat,
     break;
   case OPT_HELP:
     opt.help = true;
+    break;
+  case OPT_FILE:
+    read_options_file(optarg);
     break;
   case OPT_EXIT:
     opt.exit = true;
@@ -644,45 +859,29 @@ int options_parse(int argc, char *argv[]) {
   enum compat_level compat = opt.app->compat_level;
   int c;
 
+  /* Process options */
   while ((c = opt.app->long_opts ?
                 getopt_long(argc, argv, optstr, options, NULL) :
                 getopt(argc, argv, optstr)) != -1) {
-    bool is_short = isascii(c);
-    const struct option_info *incompatible_option = NULL;
 
-    /* Look up option definition */
-    for (optdef = options_info;
-         optdef - options_info < max_options;
-         optdef++) {
+    optdef = find_option(c, NULL);
 
-      if (c == (is_short ? optdef->short_name : (int) optdef->option)) {
-        if ((optdef->compat_level & compat) == 0) {
-          /* Tentatively found an incompatible option but there may be
-           * another one that is compatible later in the list. */
-          incompatible_option = optdef;
-        } else {
-          incompatible_option = NULL;
-          break;
-        }
-      }
-    }
-
-    /* Handle option */
-    if (optdef - options_info == max_options) {
-      if ((optdef = incompatible_option)) {
-        char short_name[2] = { optdef->short_name, 0};
-        fprintf(stderr, "illegal option (%s) at this compat level\n",
-                optdef->long_name ? optdef->long_name : short_name);
-      }
+    if (optdef && (optdef->compat_level & compat) == 0) {
+      char short_name[2] = { optdef->short_name, 0};
+      fprintf(stderr, "illegal option (%s) at this compat level\n",
+              optdef->long_name ? optdef->long_name : short_name);
       opt.error = true;
-    } else {
+    } else if (optdef) {
       /* Set bitfield before calling handler in case the handler wishes
        * to reset the option based on argument value. */
       enable(optdef->option);
-      handle_option(&compat, optdef);
+      handle_option(&compat, optdef, optarg);
+    } else {
+      opt.error = true;
     }
   }
 
+  /* Process positional arguments */
   assert(opt.app->takes_positional_opts <= MAX_POSITIONAL_OPTS);
   for (int i = 0; i < opt.app->takes_positional_opts; i++) {
     enum opt option = opt.app->positional_opts[i];
@@ -697,16 +896,22 @@ int options_parse(int argc, char *argv[]) {
          optdef++);
     assert(optdef);
 
-    if (optdef->has_arg != no_argument)
-      optarg = argv[optind++];
-    handle_option(&compat, optdef);
+    handle_option(&compat, optdef,
+                  optdef->has_arg == no_argument ? NULL : argv[optind++]);
   }
   return optind;
 }
 
 void options_free(void) {
+  struct options_file *file, *next;
+
   if (opt.cpu_affinity.size)
     CPU_FREE(opt.cpu_affinity.mask);
   usrgrp_free(&opt.users_groups);
   usrgrp_free(&opt.env_users_groups);
+
+  for (file = opt.opt_files; file; file = next) {
+    next = file->next;
+    free(file);
+  }
 }
