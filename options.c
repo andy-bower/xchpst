@@ -90,9 +90,10 @@ const struct option_info options_info[] = {
   { C_X, OPT_FORK_JOIN,   '\0', "fork-join", no_argument,      "fork and wait for process" },
   { C_X, OPT_NEW_ROOT,    '\0', "new-root",  no_argument,      "create a new root fs" },
   { C_X, OPT_NO_NEW_PRIVS,'\0', "no-new-privs", no_argument,   "no new privileges" },
-  { C_X, OPT_SCHEDULER,   '\0', "scheduler", required_argument,"set scheduler policy", "POLICY" },
   { C_X, OPT_CPUS,        '\0', "cpus",      required_argument,"set CPU affinity", "AFFINITY" },
-  { C_X, OPT_IO_NICE,     '\0', "io-nice",   required_argument,
+  { C_X, OPT_CPU_SCHED,   '\0', "cpu-scheduler", required_argument,
+    "set CPU scheduler policy", "POLICY" },
+  { C_X, OPT_IO_SCHED,    '\0', "io-scheduler",   required_argument,
     "set I/O scheduling class", "rt|best-effort|idle[:PRIORITY]"},
   { C_X, OPT_UMASK,       '\0', "umask",     required_argument,"set umask", "MODE" },
   { C_X, OPT_APP,         '\0', "app",       required_argument,"define application name", "NAME"},
@@ -733,13 +734,13 @@ static void handle_option(enum compat_level *compat,
       opt.error = true;
     opt.caps_op = CAP_OP_DROP;
     break;
-  case OPT_SCHEDULER:
+  case OPT_CPU_SCHED:
     opt.sched_policy = sched_policy_from_name(optarg);
     break;
   case OPT_CPUS:
     parse_cpus(optarg);
     break;
-  case OPT_IO_NICE:
+  case OPT_IO_SCHED:
     parse_ionice(optarg);
     break;
   case OPT_UMASK:

@@ -369,7 +369,7 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  if (set(OPT_IO_NICE)) {
+  if (set(OPT_IO_SCHED)) {
     if (syscall(SYS_ioprio_set,IOPRIO_WHO_PROCESS, 0, opt.ionice_prio) == -1) {
       fprintf(stderr, "warning: failed to set I/O scheduling class\n");
     } else if (is_verbose()) {
@@ -384,7 +384,7 @@ int main(int argc, char *argv[]) {
                         opt.cpu_affinity.mask) == -1)
     perror("could not set CPU affinity");
 
-  if (set(OPT_SCHEDULER) &&
+  if (set(OPT_CPU_SCHED) &&
       sched_setscheduler(0, opt.sched_policy, &((struct sched_param) {})) == -1)
     perror("could not change scheduler policy");
 

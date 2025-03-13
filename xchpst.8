@@ -146,10 +146,10 @@ user, but retain all others.
 Prevent the target application from obtaining any new privileges.
 See
 .Xr PR_SET_NO_NEW_PRIVS 2const .
-.It Fl -scheduler Ar other | batch | idle
+.It Fl -cpu-scheduler Ic other Ns | Ns Ic batch Ns | Ns Ic idle
 Set the scheduler policy, as per
 .Xr sched_setscheduler 2 .
-.It Fl -io-nice Ic rt Ns | Ns Ic best-effort Ns | Ns Ic idle Ns Op : Ns Ar priority
+.It Fl -io-scheduler Ic rt Ns | Ns Ic best-effort Ns | Ns Ic idle Ns Op : Ns Ar priority
 Set the I/O scheduler policy and priority,
 as per
 .Xr ionice 1 .
