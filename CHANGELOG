@@ -1,3 +1,16 @@
+xchpst (0.5.0) unstable; urgency=medium
+
+  * add --file to process an option file
+  * add --oom for OOM score adjustment
+  * extend rlimit options and handling
+    - implement all currently-available rlimit options
+    - add hard limit setting, delimited with ':'
+    - accept '=' and 'infinity' as synonyms for 'unlimited'
+  * normalise CPU and I/O scheduler option names
+  * update man page, removing designation of interface as being provisional
+
+ -- Andrew Bower <andrew@bower.uk>  Thu, 13 Mar 2025 21:28:03 +0000
+
 xchpst (0.4.1) unstable; urgency=medium
 
   * place roots under subdirectory with fallback alternatives for /run
