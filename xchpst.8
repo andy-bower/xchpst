@@ -358,7 +358,7 @@ character and may only be preceded by whitespace,
 otherwise they will be interpreted as part of an option name or value.
 .Pp
 Example options file:
-.Bd -literal -offset indent -compact
+.Bd -literal -offset indent
 # Comment line
 private-tmp
 app my app
@@ -432,33 +432,6 @@ by identifying the process id of the hardened application and running:
 .Xr prlimit 2 ,
 .Xr namespaces 7 ,
 .Xr capabilities 7
-.Sh HISTORY
-.Nm
-version 0.x has an unstable interface for initial feature development.
-.Pp
-.Nm
-was written from scratch to be backwards compatible with
-.Nm chpst .
-The extent of the planned extensions dwarfing the
-complexity of the original options led to the decision to write a new tool
-rather than extending the existing one.
-The new
-.Nm
-tool is targeted at new versions of Linux distributions so is written with
-a recent tooling and kernel baseline.
-.Pp
-.Nm
-has different design principles from
-.Nm chpst .
-Use
-.Nm
-if you need the additional options to harden runit-supervised tasks;
-use
-.Nm chpst
-if you do not need them, for a minimal footprint.
 .Sh AUTHORS
 .An -nosplit
 .An Andrew Bower Aq Mt andrew@bower.uk
-.Sh BUGS
-Please raise bug reports at:
-.Lk https://gitlab.com/abower/xchpst/-/issues
