@@ -15,7 +15,7 @@ Issues and merge requests welcome on the [project page](https://gitlab.com/abowe
 
 Releases will take the form of git tags signed by my RSA/4096 PGP key [`06AB 786E 936C 6C73 F6D8 130C 4510 3394 30FC 9F34`](https://sw.cdefg.uk/xchpst/xchpst-signing-keys.gpg).
 
-The [CHANGELOG](CHANGELOG) represents the notable net differences between releases. Semantic versioning is employed. Versions numbered 0.x.y do not have a stable interface.
+The [CHANGELOG](CHANGELOG) represents the notable net differences between releases. Semantic versioning is employed.
 
 Thanks for your interest - please send feedback!
 
