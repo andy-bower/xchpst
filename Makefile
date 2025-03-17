@@ -9,7 +9,6 @@ prefix ?= /usr/local
 CFLAGS ?= -g -O2
 CFLAGS += -MMD -MP \
 	  -Wall -Wextra -Werror \
-	  -Wno-missing-field-initializers \
 	  -std=c2x \
 	  -D_GNU_SOURCE \
 	  -DPROG_NAME=$(name) \
