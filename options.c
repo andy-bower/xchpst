@@ -90,6 +90,7 @@ const struct option_info options_info[] = {
   { C_X, OPT_LOG_DIR,     '\0', "log-dir",   no_argument,      "create log dir", NULL },
   { C_X, OPT_LOGIN,       '\0', "login",     no_argument,      "simulate login environment", NULL },
   { C_X, OPT_OOM,         '\0', "oom",       required_argument,"set oom adjust value", "ADJ" },
+  { C_X, OPT_HARDLIMIT,   '\0', "hardlimit", no_argument,      "set hard limits with soft limits", NULL },
 };
 #define max_options ((ssize_t) ((sizeof options_info / sizeof *options_info)))
 
@@ -262,6 +263,8 @@ bool parse_limits(struct limit *limit, const char *arg) {
   if (sep != NULL) {
     *sep++ = '\0';
     limit->hard_specified = parse_limit(&limit->limits.rlim_max, sep);
+  } else if (set(OPT_HARDLIMIT)) {
+    both = true;
   }
   if (arg != sep) {
     limit->soft_specified = parse_limit(&limit->limits.rlim_cur, arg);
@@ -700,6 +703,7 @@ static void handle_option(enum compat_level *compat,
   case OPT_CACHE_DIR:
   case OPT_LOG_DIR:
   case OPT_LOGIN:
+  case OPT_HARDLIMIT:
     /* Boolean options needing no further option processing */
     break;
   case OPT_CAPBS_KEEP:

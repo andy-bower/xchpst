@@ -216,6 +216,8 @@ Set soft limit for real time priority of the process.
 Set soft limit for amount of real time processing between blocking system calls.
 .It Fl -limit-sigpending Ar number
 Set soft limit for the number of pending signals permitted for the process.
+.It Fl -hardlimit
+Also set the hard limit for any soft limit option that follows.
 .It Fl @
 Switches to chpst-compatible option handling only for the remaining
 options. This is to support scripts that can convert an

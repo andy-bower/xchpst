@@ -120,6 +120,7 @@ enum opt /* C23: :int */ {
   OPT_LOG_DIR,
   OPT_LOGIN,
   OPT_OOM,
+  OPT_HARDLIMIT,
 
   /* Keep at end */
   OPT_EXIT,
