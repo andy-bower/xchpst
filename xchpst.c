@@ -286,7 +286,9 @@ int main(int argc, char *argv[]) {
     opt.error = true;
 
   if (opt.error) {
-    usage(stderr);
+    fprintf(stderr, "%s: error in options. Run %s --help for usage\n",
+            program_invocation_short_name,
+            program_invocation_short_name);
     ret = CHPST_ERROR_OPTIONS;
     goto finish0;
   }
