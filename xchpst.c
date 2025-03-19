@@ -286,9 +286,14 @@ int main(int argc, char *argv[]) {
     opt.error = true;
 
   if (opt.error) {
-    fprintf(stderr, "%s: error in options. Run %s --help for usage\n",
-            program_invocation_short_name,
-            program_invocation_short_name);
+    const struct option_info *help_option = find_option(OPT_HELP, NULL);
+    if (help_option && opt.app->long_opts && help_option->long_name)
+      fprintf(stderr, "%s: error in options. Run %s --%s for usage\n",
+              program_invocation_short_name,
+              program_invocation_short_name,
+              help_option->long_name);
+    else
+      usage(stderr);
     ret = CHPST_ERROR_OPTIONS;
     goto finish0;
   }

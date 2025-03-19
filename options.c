@@ -404,8 +404,8 @@ int sched_policy_from_name(const char *name) {
   return SCHED_OTHER;
 }
 
-static const struct option_info *find_option(int by_code,
-                                             const char *by_name) {
+const struct option_info *find_option(int by_code,
+                                      const char *by_name) {
   const struct option_info *optdef;
   const struct option_info *incompatible_option = NULL;
   enum compat_level compat = opt.app->compat_level;

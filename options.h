@@ -256,5 +256,7 @@ void options_print_positional(FILE *out);
 void options_explain_positional(FILE *out);
 int options_parse(int argc, char *argv[]);
 void options_free(void);
+const struct option_info *find_option(int by_code,
+                                      const char *by_name);
 
 #endif
