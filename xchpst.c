@@ -261,7 +261,8 @@ int main(int argc, char *argv[]) {
 
   if (!(opt.new_ns & CLONE_NEWNS) &&
       (set(OPT_NET_NS) || set(OPT_PRIVATE_RUN) || set(OPT_PRIVATE_TMP) ||
-       set(OPT_RO_SYS) || set(OPT_NEW_ROOT) || set(OPT_PID_NS))) {
+       set(OPT_RO_SYS) || set(OPT_RO_HOME) ||
+       set(OPT_NEW_ROOT) || set(OPT_PID_NS))) {
     if (is_verbose())
       fprintf(stderr, "also creating mount namespace implicitly due to other options\n");
     opt.new_ns |= CLONE_NEWNS;
@@ -640,6 +641,10 @@ int main(int argc, char *argv[]) {
     private_mount("/home");
     private_mount("/root");
     private_mount("/run/user");
+  } else if (set(OPT_RO_HOME)) {
+    remount_ro("/home");
+    remount_ro("/root");
+    remount_ro("/run/user");
   }
 
   if (set(OPT_RO_SYS)) {

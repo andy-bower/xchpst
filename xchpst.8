@@ -120,7 +120,6 @@ Unless
 is also specified, the old shared host directories will still be accessible
 if the stacked mounts are removed.
 .It Fl -ro-sys
-Create a read-only filesystem hierarchy.
 Converts
 .Pa /usr
 and
@@ -131,6 +130,21 @@ filesystems, it can reveal the original writable filesystems.
 The
 .Fl -new-root
 option is designed to prevent this.
+Alternatively, use
+.Fl -cap-bs-drop
+to remove the
+.Ql CAP_SYS_ADMIN
+capability,
+preventing the bind mount from being unmounted.
+.It Fl -ro-home
+Converts
+.Pa /home ,
+.Pa /root and
+and
+.Pa /run/usr
+into read-only mounts.
+This option has the same limitations as
+.Fl -ro-sys .
 .It Fl -caps-bs-keep Ar capability Ns Op ,capability Ns ...
 Keeps only the listed capabilities in the bounding set.
 .It Fl -caps-bs-drop Ar capability Ns Op ,capability Ns ...

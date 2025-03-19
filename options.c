@@ -69,7 +69,8 @@ const struct option_info options_info[] = {
   { C_X, OPT_NET_ADOPT,   '\0', "adopt-net",required_argument, "adopt net namespace", "NS-PATH" },
   { C_X, OPT_PRIVATE_RUN, '\0', "private-run",  no_argument,    "create private /run", NULL },
   { C_X, OPT_PRIVATE_TMP, '\0', "private-tmp",  no_argument,    "create private /tmp", NULL },
-  { C_X, OPT_PROTECT_HOME,'\0', "protect-home", no_argument,    "protect home directories", NULL },
+  { C_X, OPT_PROTECT_HOME,'\0', "protect-home", no_argument,    "hide home directories", NULL },
+  { C_X, OPT_RO_HOME,     '\0', "ro-home",      no_argument,    "make home directories read only", NULL },
   { C_X, OPT_RO_SYS,      '\0', "ro-sys",       no_argument,    "create read only system", NULL },
   { C_X, OPT_CAPBS_KEEP,  '\0', "cap-bs-keep",  required_argument, "restrict capabilities bounding set", "CAP[,...]" },
   { C_X, OPT_CAPBS_DROP,  '\0', "cap-bs-drop",  required_argument, "drop from capabilities bounding set", "CAP[,...]" },
@@ -688,6 +689,7 @@ static void handle_option(enum compat_level *compat,
   case OPT_PRIVATE_RUN:
   case OPT_PRIVATE_TMP:
   case OPT_PROTECT_HOME:
+  case OPT_RO_HOME:
   case OPT_RO_SYS:
   case OPT_PGRPHACK:
   case OPT_FORK_JOIN:
