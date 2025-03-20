@@ -19,27 +19,31 @@
 #include "options.h"
 #include "precreate.h"
 
-void precreate_dir(const char *area, mode_t mode, uid_t owner, uid_t group) {
+int precreate_dir(const char *area, mode_t mode, uid_t owner, uid_t group) {
   int dirfd = openat(-1, area, O_DIRECTORY | O_CLOEXEC);
-  int rc;
+  int rc = -1;
+  int err = errno;
 
   if (dirfd == -1) {
     fprintf(stderr, "could not open %s area, %s\n",
             area, strerror(errno));
   } else {
     rc = mkdirat(dirfd, opt.app_name, mode);
-    if (rc == -1 && errno != EEXIST) {
+    err = rc == 0 ? 0 : errno;
+    if (rc == -1 && err != EEXIST) {
       fprintf(stderr, "could not create dir for %s under %s, %s\n",
-              opt.app_name, area, strerror(errno));
+              opt.app_name, area, strerror(err));
     }
-    if ((rc == 0 || errno == EEXIST) &&
+    if ((rc == 0 || err == EEXIST) &&
         (owner != (uid_t) -1 || group != (gid_t) -1)) {
       rc = fchownat(dirfd, opt.app_name, owner, group, 0);
       if (rc == -1) {
         fprintf(stderr, "warning: could not set ownership of %s under %s, %s\n",
           opt.app_name, area, strerror(errno));
+        /* This will not be a cause of failure. */
       }
     }
   }
   close(dirfd);
+  return err == EEXIST ? 0 : rc;
 }

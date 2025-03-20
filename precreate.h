@@ -4,6 +4,6 @@
 #ifndef _PRECREATE_H
 #define _PRECREATE_H
 
-extern void precreate_dir(const char *area, mode_t mode, uid_t owner, uid_t group);
+extern int precreate_dir(const char *area, mode_t mode, uid_t owner, uid_t group);
 
 #endif

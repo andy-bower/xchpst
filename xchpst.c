@@ -458,17 +458,21 @@ int main(int argc, char *argv[]) {
     uid_t o = set(OPT_SETUIDGID) ? uid : (uid_t) -1;
     gid_t g = set(OPT_SETUIDGID) ? gid : (gid_t) -1;
 
-    if (set(OPT_RUN_DIR))
-      precreate_dir("/run", 0755, o, g);
+    if (set(OPT_RUN_DIR) &&
+        precreate_dir("/run", 0755, o, g) == -1)
+      goto finish;
 
-    if (set(OPT_STATE_DIR))
-      precreate_dir("/var/lib", 0755, o, g);
+    if (set(OPT_STATE_DIR) &&
+        precreate_dir("/var/lib", 0755, o, g) == -1)
+      goto finish;
 
-    if (set(OPT_CACHE_DIR))
-      precreate_dir("/var/cache", 0755, o, g);
+    if (set(OPT_CACHE_DIR) &&
+        precreate_dir("/var/cache", 0755, o, g) == -1)
+      goto finish;
 
-    if (set(OPT_LOG_DIR))
-      precreate_dir("/var/log", 0755, o, g);
+    if (set(OPT_LOG_DIR) &&
+        precreate_dir("/var/log", 0755, o, g) == -1)
+      goto finish;
   }
 
   if (set(OPT_SETUIDGID) && opt.users_groups.user.resolved) {
@@ -629,27 +633,30 @@ int main(int argc, char *argv[]) {
     special_mount("/proc", "proc", "procfs", NULL);
   }
 
-  if (set(OPT_PRIVATE_RUN))
-    private_mount("/run");
+  if (set(OPT_PRIVATE_RUN) &&
+      private_mount("/run") == -1)
+    goto finish;
 
-  if (set(OPT_PRIVATE_TMP)) {
-    private_mount("/tmp");
-    private_mount("/var/tmp");
-  }
+  if (set(OPT_PRIVATE_TMP) &&
+      (private_mount("/tmp") == -1 ||
+       private_mount("/var/tmp") == -1))
+    goto finish;
 
-  if (set(OPT_PROTECT_HOME)) {
-    private_mount("/home");
-    private_mount("/root");
-    private_mount("/run/user");
-  } else if (set(OPT_RO_HOME)) {
-    remount_ro("/home");
-    remount_ro("/root");
-    remount_ro("/run/user");
-  }
+  if (set(OPT_PROTECT_HOME) &&
+      (private_mount("/home") == -1 ||
+       private_mount("/root") == -1 ||
+       private_mount("/run/user") == -1))
+    goto finish;
 
-  if (set(OPT_RO_SYS)) {
-    remount_sys_ro();
-  }
+  if (!set(OPT_PROTECT_HOME) && set(OPT_RO_HOME) &&
+      (remount_ro("/home") == -1 ||
+       remount_ro("/root") == -1 ||
+       remount_ro("/run/user") == -1))
+    goto finish;
+
+  if (set(OPT_RO_SYS) &&
+      remount_sys_ro() == -1)
+    goto finish;
 
   if (opt.caps_op != CAP_OP_NONE)
     if (!drop_capabilities())

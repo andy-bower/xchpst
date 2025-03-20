@@ -443,10 +443,6 @@ pid-ns
 uts-ns
 net-adopt
 T}	T{
-private-run
-private-tmp
-protect-home
-ro-sys
 T}
 capabilities	T{
 T}	T{
@@ -456,12 +452,16 @@ cap-bs-drop
 caps-keep
 caps-drop
 T}
-other filesystem	T{
-T}	T{
+filesystem	T{
+private-run
+private-tmp
+protect-home
+ro-sys
 run-dir
 state-dir
 cache-dir
 log-dir
+T}	T{
 T}
 other	T{
 T}	T{
