@@ -405,6 +405,76 @@ If there is no error and the intended application is
 .Fn exec Ns 'd,
 the exit status will be that of the application, not
 .Nm .
+.Ss Behaviour on failure to apply
+The table below divides the process change options between those that abort
+on failure to effect the requested change (with error code 111) and those
+that continue execution. Nonsense configuration values always fail with
+error code 100.
+.Pp
+.TS
+allbox;
+lb lb lb lb
+l l l l.
+Option group	Abort on error	T{
+Continue on error or cannot fail to apply
+T}	T{
+Continue if whole feature unsupported in kernel
+T}
+chpst	T{
+u e / C n L l m d s a o p f c r t
+T}	T{
+U b 0 1 2
+T}
+rlimit	T{
+limit-memlock
+limit-msgqueue
+limit-nice
+limit-rtprio
+limit-rttime
+limit-sigpending
+T}
+namespaces	T{
+fork-join
+new-root
+mount-ns
+net-ns
+user-ns
+pid-ns
+uts-ns
+net-adopt
+T}	T{
+private-run
+private-tmp
+protect-home
+ro-sys
+T}
+capabilities	T{
+T}	T{
+T}	T{
+cap-bs-keep
+cap-bs-drop
+caps-keep
+caps-drop
+T}
+other filesystem	T{
+T}	T{
+run-dir
+state-dir
+cache-dir
+log-dir
+T}
+other	T{
+T}	T{
+cpus
+cpu-scheduler
+io-scheduler
+no-new-privs
+umask
+oom
+login
+T}
+.TE
+.sp
 .Sh EXAMPLES
 Testing the emulation of
 .Sq envdir :
