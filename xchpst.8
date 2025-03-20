@@ -474,7 +474,51 @@ oom
 login
 T}
 .TE
-.sp
+.Sh NOTES
+.Ss systemd option mapping
+The table below shows how some systemd service directives map onto
+.Nm
+options.
+See
+.Xr systemd.exec 5
+This is not an exhaustive list.
+.TS
+allbox;
+lb lb lb
+l l l.
+systemd	xchpst	Differences
+T{
+User=
+Group=
+T}	u	T{
+Check syntax. In particular, numeric ids begin with a colon.
+T}
+ProtectSystem=yes	ro-sys
+ProtectHome=read-only	ro-home
+ProtectHome=tmpfs	protect-home
+PrivateTmp=yes	private-tmp
+CapabilityBoundingSet=...	cap-bs-keep ...
+CapabilityBonudingSet=~...	cap-bs-drop ...
+AmbientCapabilities=...	caps-keep ...
+AmbientCapabilities=~...	caps-drop ...
+NoNewPrivileges=yes	no-new-privs
+CPUAffinity=	cpus	T{
+use
+.Xr taskset 1
+format
+T}
+CPUSchedulingPolicy=	cpu-scheduler
+T{
+IOSchedulingClass=
+IOSchedulingPriority=
+T}	io-scheduler
+UMask=	umask
+RuntimeDirectory=	run-dir
+Statedirectory=	state-dir
+CacheDirectory=	cache-dir
+LogsDirectory=	log-dir
+OOMScoreAdjust=	oom
+.TE
 .Sh EXAMPLES
 Testing the emulation of
 .Sq envdir :
