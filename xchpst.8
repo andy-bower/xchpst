@@ -597,6 +597,42 @@ is not useful but other options like
 will use the right user.
 T}
 .TE
+.Ss Resource limit option mapping
+The table below shows how
+.Nm
+resource limit options correspond to those of other tools.
+.TS
+allbox;
+lb lb lb lb lb lb
+lf(CR) lf(CR) lf(CR) lf(CR) lf(CR) lf(CR).
+xchpst	chpst	softlimit	prlimit	ulimit	systemd
+d	d	d	d	d	LimitDATA=
+o	o	o	n	n	LimitNOFILE=
+p	p	p	u	u	LimitNPROC=
+f	f	f	f	f	LimitFSIZE=
+c	c	c	c	c	LimitCORE=
+t	t	t	t	t	LimitCPU=
+r		r	m	m	LimitRSS=
+m	m	m	d s l v	d s l v	T{
+LimitDATA=
+LimitSTACK=
+LimitAS=
+LimitMEMLOCK=
+T}
+limit-memlock		l	l	l	LimitMEMLOCK=
+s		s	s	s	LimitSTACK=
+a		a	v	v	LimitAS=
+limit-msgqueue			q	q	LimitMSGQUEUE=
+limit-nice			e	e	LimitNICE=
+limit-rtprio			r	r	LimitRTPRIO=
+limit-rttime			y	R	LimitRTTIME=
+limit-sigpending			i	i	LimitSIGPENDING=
+			x	x	LimitLOCKS=
+.TE
+The following
+.Nm ulimit
+options are not available:
+.Li b k p P T .
 .Sh BUGS
 The
 .Fl -cpu-scheduler
