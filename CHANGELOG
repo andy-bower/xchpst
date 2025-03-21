@@ -1,3 +1,12 @@
+xchpst (0.6.1) unstable; urgency=medium
+
+  * add missing --limit-locks option
+  * remove compat script example
+  * tweak man page to avoid groff linting issues
+  * add table comparing other tools' resource mapping options to man page
+
+ -- Andrew Bower <andrew@bower.uk>  Fri, 21 Mar 2025 21:12:53 +0000
+
 xchpst (0.6.0) unstable; urgency=medium
 
   * add --ro-home for read-only home directories
@@ -5,7 +14,7 @@ xchpst (0.6.0) unstable; urgency=medium
   * add --hardlimit to augment chpst-style softlimit options
   * abort on failure to apply filesystem-related options
   * stop swamping terminal with full usage list on xchpst option error
-  * Extend man page
+  * extend man page
     - add table on option failure modes
     - add table with systemd option mappings
 
