@@ -322,10 +322,17 @@ Close stderr.
 The resource limit options above take a parameter in one of the following forms:
 .Bl -tag -width mmmmbytes
 .It Ar soft
-Set only the soft limit, in the style of
+Set only the soft limit,
+in the style of
 .Nm chpst
 and
-.Nm softlimit .
+.Nm softlimit ,
+unless
+.Fl -hardlimit
+has previously been specified,
+in which case both soft and hard limits are defined,
+in the style of
+.Nm prlimit .
 .It Ar soft :
 Set only the soft limit, in the style of
 .Xr prlimit 1 .
@@ -413,27 +420,32 @@ error code 100.
 .Pp
 .TS
 allbox;
-lb lb lb lb
-l l l l.
+lb lbx lbx
+l lfC lfC.
 Option group	Abort on error	T{
-Continue on error or cannot fail to apply
-T}	T{
-Continue if whole feature unsupported in kernel
+Continue on error
 T}
 chpst	T{
+.Bd -ragged -compact
 u e / C n L l m d s a o p f c r t
+.Ed
 T}	T{
+.Bd -ragged -compact
 U b 0 1 2
+.Ed
 T}
 rlimit	T{
+.Bd -ragged -compact
 limit-memlock
 limit-msgqueue
 limit-nice
 limit-rtprio
 limit-rttime
 limit-sigpending
+.Ed
 T}
 namespaces	T{
+.Bd -ragged -compact
 fork-join
 new-root
 mount-ns
@@ -442,17 +454,23 @@ user-ns
 pid-ns
 uts-ns
 net-adopt
+.Ed
 T}	T{
 T}
-capabilities	T{
+T{
+capabilities
+.Bq 1
 T}	T{
 T}	T{
+.Bd -ragged -compact
 cap-bs-keep
 cap-bs-drop
 caps-keep
 caps-drop
+.Ed
 T}
 filesystem	T{
+.Bd -ragged -compact
 private-run
 private-tmp
 protect-home
@@ -461,10 +479,12 @@ run-dir
 state-dir
 cache-dir
 log-dir
+.Ed
 T}	T{
 T}
 other	T{
 T}	T{
+.Bd -ragged -compact
 cpus
 cpu-scheduler
 io-scheduler
@@ -472,8 +492,17 @@ no-new-privs
 umask
 oom
 login
+.Ed
 T}
 .TE
+.Bl -tag -width [8]
+.It Bq 1
+If capabilities are not available in the kernel,
+errors are ignored.
+Otherwise any failure causes an abort.
+See
+.Sx BUGS
+.El
 .Sh NOTES
 .Ss systemd option mapping
 The table below shows how some systemd service directives map onto
@@ -484,12 +513,14 @@ See
 This is not an exhaustive list.
 .TS
 allbox;
-lb lb lb
-l l l.
+lb lb lbx
+lf(C) lf(C) l.
 systemd	xchpst	Differences
 T{
+.Bd -literal -compact
 User=
 Group=
+.Ed
 T}	u	T{
 Check syntax. In particular, numeric ids begin with a colon.
 T}
@@ -497,10 +528,10 @@ ProtectSystem=yes	ro-sys
 ProtectHome=read-only	ro-home
 ProtectHome=tmpfs	protect-home
 PrivateTmp=yes	private-tmp
-CapabilityBoundingSet=...	cap-bs-keep ...
-CapabilityBonudingSet=~...	cap-bs-drop ...
-AmbientCapabilities=...	caps-keep ...
-AmbientCapabilities=~...	caps-drop ...
+CapabilityBoundingSet=	cap-bs-keep
+CapabilityBoundingSet=~	cap-bs-drop
+AmbientCapabilities=	caps-keep
+AmbientCapabilities=~	caps-drop
 NoNewPrivileges=yes	no-new-privs
 CPUAffinity=	cpus	T{
 use
@@ -509,8 +540,10 @@ format
 T}
 CPUSchedulingPolicy=	cpu-scheduler
 T{
+.Bd -literal -compact
 IOSchedulingClass=
 IOSchedulingPriority=
+.Ed
 T}	io-scheduler
 UMask=	umask
 RuntimeDirectory=	run-dir
@@ -519,6 +552,17 @@ CacheDirectory=	cache-dir
 LogsDirectory=	log-dir
 OOMScoreAdjust=	oom
 .TE
+.Sh BUGS
+The
+.Fl -cpu-scheduler
+option should accept more scheduling policies and should accept additional
+parameters to qualify those policies. Currently unknown policy names are treated
+as the default Linux scheduling policy.
+.Pp
+When the kernel supports capabilities but not specific capabilities that have
+been requested to be dropped or kept,
+.Nm
+should continue rather than aborting.
 .Sh EXAMPLES
 Testing the emulation of
 .Sq envdir :
