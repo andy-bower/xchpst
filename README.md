@@ -9,7 +9,7 @@
 
 `xchpst` is written from scratch and is backwards compatible with the `chpst` command line options.
 
-The documentation effort for this tool is focussed on the [man page](xchpst.8).
+The documentation effort for this tool is exclusively on the [man page](xchpst.8).
 
 Issues and merge requests welcome on the [project page](https://gitlab.com/abower/xchpst).
 
