@@ -223,6 +223,8 @@ Set soft limit for real time priority of the process.
 Set soft limit for amount of real time processing between blocking system calls.
 .It Fl -limit-sigpending Ar number
 Set soft limit for the number of pending signals permitted for the process.
+.It Fl -limit-locks Ar number
+Set soft limit for the number of file locks that this process may hold.
 .It Fl -hardlimit
 Also set the hard limit for any soft limit option that follows.
 .It Fl @
@@ -449,6 +451,7 @@ limit-nice
 limit-rtprio
 limit-rttime
 limit-sigpending
+limit-locks
 .Ed
 T}
 namespaces	T{
@@ -613,25 +616,28 @@ f	f	f	f	f	LimitFSIZE=
 c	c	c	c	c	LimitCORE=
 t	t	t	t	t	LimitCPU=
 r		r	m	m	LimitRSS=
+s		s	s	s	LimitSTACK=
+a		a	v	v	LimitAS=
 m	m	m	d s l v	d s l v	T{
+.Bd -literal -compact
 LimitDATA=
 LimitSTACK=
 LimitAS=
 LimitMEMLOCK=
+.Ed
 T}
 limit-memlock		l	l	l	LimitMEMLOCK=
-s		s	s	s	LimitSTACK=
-a		a	v	v	LimitAS=
 limit-msgqueue			q	q	LimitMSGQUEUE=
 limit-nice			e	e	LimitNICE=
 limit-rtprio			r	r	LimitRTPRIO=
 limit-rttime			y	R	LimitRTTIME=
 limit-sigpending			i	i	LimitSIGPENDING=
-			x	x	LimitLOCKS=
+limit-locks			x	x	LimitLOCKS=
 .TE
-The following
-.Nm ulimit
-options are not available:
+The following options from the
+.Nm bash
+.Cm ulimit
+command are not available:
 .Li b k p P T .
 .Sh BUGS
 The

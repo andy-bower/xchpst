@@ -51,6 +51,7 @@ const struct option_info options_info[] = {
   { C_X, OPT_RLIMIT_RTPRIO,    '\0', "limit-rtprio",    required_argument, "set RLIMIT_RTPRIO", "PRIO" },
   { C_X, OPT_RLIMIT_RTTIME,    '\0', "limit-rttime",    required_argument, "set RLIMIT_RTTIME", "MS" },
   { C_X, OPT_RLIMIT_SIGPENDING,'\0', "limit-sigpending",required_argument, "set RLIMIT_SIGPENDING", "NUM" },
+  { C_X, OPT_RLIMIT_LOCKS,     '\0', "limit-locks",     required_argument, "set RLIMIT_LOCKS", "NUM" },
   { C_ALL,OPT_VERBOSE,    'v',  "verbose",  no_argument,       "be verbose", NULL },
   { C_R, OPT_VERSION,     'V',  "version",  no_argument,       "show " NAME_STR " version", NULL },
   { C_R, OPT_PGRPHACK,    'P',  NULL,       no_argument,       "run in new process group", NULL },
@@ -832,6 +833,10 @@ static void handle_option(enum compat_level *compat,
     break;
   case OPT_RLIMIT_SIGPENDING:
     if (!parse_limits(&opt.rlimit_sigpending, optarg))
+      opt.error = true;
+    break;
+  case OPT_RLIMIT_LOCKS:
+    if (!parse_limits(&opt.rlimit_locks, optarg))
       opt.error = true;
     break;
   case OPT_CLOSE_STDIN:

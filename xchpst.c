@@ -207,6 +207,7 @@ void set_resource_limits(void) {
   set_rlimit(RLIMIT_RTPRIO, &opt.rlimit_rtprio);
   set_rlimit(RLIMIT_RTTIME, &opt.rlimit_rttime);
   set_rlimit(RLIMIT_SIGPENDING, &opt.rlimit_sigpending);
+  set_rlimit(RLIMIT_LOCKS, &opt.rlimit_locks);
 }
 
 static const struct app *find_app(const char *name) {
