@@ -120,7 +120,7 @@ Unless
 is also specified, the old shared host directories will still be accessible
 if the stacked mounts are removed.
 .It Fl -ro-sys
-Converts
+Convert
 .Pa /usr
 and
 .Pa /boot
@@ -137,7 +137,7 @@ to remove the
 capability,
 preventing the bind mount from being unmounted.
 .It Fl -ro-home
-Converts
+Convert
 .Pa /home ,
 .Pa /root and
 and
@@ -146,7 +146,7 @@ into read-only mounts.
 This option has the same limitations as
 .Fl -ro-sys .
 .It Fl -ro-etc
-Converts
+Convert
 .Pa /etc
 into a read-only mount.
 This option has the same limitations as
@@ -225,7 +225,7 @@ Set soft limit for the number of pending signals permitted for the process.
 .It Fl -hardlimit
 Also set the hard limit for any soft limit option that follows.
 .It Fl @
-Switches to chpst-compatible option handling only for the remaining
+Switch to chpst-compatible option handling only for the remaining
 options. This is to support scripts that can convert an
 .Nm
 invocation into a command line for
@@ -524,14 +524,6 @@ allbox;
 lb lb lbx
 lf(C) lf(C) l.
 systemd	xchpst	Differences
-T{
-.Bd -literal -compact
-User=
-Group=
-.Ed
-T}	u	T{
-Check syntax. In particular, numeric ids begin with a colon.
-T}
 ProtectSystem=yes	ro-sys
 ProtectSystem=full	ro-sys ro-etc
 ProtectHome=read-only	ro-home
@@ -576,6 +568,33 @@ Leaf name governed by target command or
 option
 T}
 OOMScoreAdjust=	oom
+T{
+.Bd -literal -compact
+User=
+Group=
+.Ed
+T}	u	T{
+Check syntax. In particular, numeric ids begin with a colon.
+T}
+T{
+User=
+.No with
+ExecStart=+
+.No or
+ExecStart=!
+T}	U	T{
+In these modes,
+.Nm systemd
+does not drop the user,
+expecting the application to do that,
+but instead uses the specified
+username for other options.
+In this case the environment variable setting by
+.Nm
+is not useful but other options like
+.Ql run-dir
+will use the right user.
+T}
 .TE
 .Sh BUGS
 The
