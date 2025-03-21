@@ -1,3 +1,16 @@
+xchpst (0.6.0) unstable; urgency=medium
+
+  * add --ro-home for read-only home directories
+  * add --ro-etc for read-only config areas
+  * add --hardlimit to augment chpst-style softlimit options
+  * abort on failure to apply filesystem-related options
+  * stop swamping terminal with full usage list on xchpst option error
+  * Extend man page
+    - add table on option failure modes
+    - add table with systemd option mappings
+
+ -- Andrew Bower <andrew@bower.uk>  Fri, 21 Mar 2025 03:38:47 +0000
+
 xchpst (0.5.0) unstable; urgency=medium
 
   * add --file to process an option file
