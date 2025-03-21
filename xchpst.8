@@ -145,6 +145,12 @@ and
 into read-only mounts.
 This option has the same limitations as
 .Fl -ro-sys .
+.It Fl -ro-etc
+Converts
+.Pa /etc
+into a read-only mount.
+This option has the same limitations as
+.Fl -ro-sys .
 .It Fl -caps-bs-keep Ar capability Ns Op ,capability Ns ...
 Keeps only the listed capabilities in the bounding set.
 .It Fl -caps-bs-drop Ar capability Ns Op ,capability Ns ...
@@ -475,6 +481,8 @@ private-run
 private-tmp
 protect-home
 ro-sys
+ro-home
+ro-etc
 run-dir
 state-dir
 cache-dir
@@ -525,6 +533,7 @@ T}	u	T{
 Check syntax. In particular, numeric ids begin with a colon.
 T}
 ProtectSystem=yes	ro-sys
+ProtectSystem=full	ro-sys ro-etc
 ProtectHome=read-only	ro-home
 ProtectHome=tmpfs	protect-home
 PrivateTmp=yes	private-tmp
@@ -546,10 +555,26 @@ IOSchedulingPriority=
 .Ed
 T}	io-scheduler
 UMask=	umask
-RuntimeDirectory=	run-dir
-StateDirectory=	state-dir
-CacheDirectory=	cache-dir
-LogsDirectory=	log-dir
+RuntimeDirectory=	run-dir	T{
+Leaf name governed by target command or
+.Ql app
+option
+T}
+StateDirectory=	state-dir	T{
+Leaf name governed by target command or
+.Ql app
+option
+T}
+CacheDirectory=	cache-dir	T{
+Leaf name governed by target command or
+.Ql app
+option
+T}
+LogsDirectory=	log-dir	T{
+Leaf name governed by target command or
+.Ql app
+option
+T}
 OOMScoreAdjust=	oom
 .TE
 .Sh BUGS

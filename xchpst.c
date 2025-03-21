@@ -261,7 +261,7 @@ int main(int argc, char *argv[]) {
 
   if (!(opt.new_ns & CLONE_NEWNS) &&
       (set(OPT_NET_NS) || set(OPT_PRIVATE_RUN) || set(OPT_PRIVATE_TMP) ||
-       set(OPT_RO_SYS) || set(OPT_RO_HOME) ||
+       set(OPT_RO_SYS) || set(OPT_RO_HOME) || set(OPT_RO_ETC) ||
        set(OPT_NEW_ROOT) || set(OPT_PID_NS))) {
     if (is_verbose())
       fprintf(stderr, "also creating mount namespace implicitly due to other options\n");
@@ -656,6 +656,10 @@ int main(int argc, char *argv[]) {
 
   if (set(OPT_RO_SYS) &&
       remount_sys_ro() == -1)
+    goto finish;
+
+  if (set(OPT_RO_ETC) &&
+      (remount_ro("/etc") == -1))
     goto finish;
 
   if (opt.caps_op != CAP_OP_NONE)

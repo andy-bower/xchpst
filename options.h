@@ -102,6 +102,7 @@ enum opt /* C23: :int */ {
   OPT_PROTECT_HOME,
   OPT_RO_HOME,
   OPT_RO_SYS,
+  OPT_RO_ETC,
   OPT_CAPBS_KEEP,
   OPT_CAPBS_DROP,
   OPT_CAPS_KEEP,

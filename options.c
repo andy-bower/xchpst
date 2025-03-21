@@ -72,6 +72,7 @@ const struct option_info options_info[] = {
   { C_X, OPT_PROTECT_HOME,'\0', "protect-home", no_argument,    "hide home directories", NULL },
   { C_X, OPT_RO_HOME,     '\0', "ro-home",      no_argument,    "make home directories read only", NULL },
   { C_X, OPT_RO_SYS,      '\0', "ro-sys",       no_argument,    "create read only system", NULL },
+  { C_X, OPT_RO_ETC,      '\0', "ro-etc",       no_argument,    "make config files read only", NULL },
   { C_X, OPT_CAPBS_KEEP,  '\0', "cap-bs-keep",  required_argument, "restrict capabilities bounding set", "CAP[,...]" },
   { C_X, OPT_CAPBS_DROP,  '\0', "cap-bs-drop",  required_argument, "drop from capabilities bounding set", "CAP[,...]" },
   { C_X, OPT_CAPS_KEEP,   '\0', "caps-keep",    required_argument, "keep (only) these capabilities", "CAP[,...]" },
@@ -694,6 +695,7 @@ static void handle_option(enum compat_level *compat,
   case OPT_PROTECT_HOME:
   case OPT_RO_HOME:
   case OPT_RO_SYS:
+  case OPT_RO_ETC:
   case OPT_PGRPHACK:
   case OPT_FORK_JOIN:
   case OPT_NEW_ROOT:
