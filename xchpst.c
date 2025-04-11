@@ -210,6 +210,47 @@ void set_resource_limits(void) {
   set_rlimit(RLIMIT_LOCKS, &opt.rlimit_locks);
 }
 
+bool drop_user(uid_t uid, gid_t gid) {
+  int rc;
+  int i;
+
+  /* You do this backwards: supplemental groups first */
+  gid_t *groups = malloc(sizeof(gid_t) * opt.users_groups.num_supplemental);
+
+  if (opt.caps_op != CAP_OP_NONE) {
+    /* Postpone the loss of capabilities until after the user switch
+     * and drop them when ready. */
+    rc = prctl(PR_SET_KEEPCAPS, 1);
+  }
+
+  if (!groups)
+    return false;
+
+  for (i = 0; i < opt.users_groups.num_supplemental; i++)
+    groups[i] = opt.users_groups.supplemental[i].gid;
+  rc = (setgroups(i, groups) == -1 ? errno : 0);
+  free(groups);
+  if (rc) {
+    perror("setgroups");
+    return false;
+  }
+
+  /* Then main group */
+  rc = setresgid(gid, gid, gid);
+  if (rc) {
+    perror("setresgid");
+    return false;
+  }
+
+  /* Then the actual user */
+  rc = setresuid(uid, uid, uid);
+  if (rc) {
+    perror("setresgid");
+    return false;
+  }
+  return true;
+}
+
 static const struct app *find_app(const char *name) {
   const struct app *app;
   const char *ext = strchrnul(name, '.');
@@ -238,7 +279,6 @@ int main(int argc, char *argv[]) {
   uid_t uid;
   gid_t gid;
   int fd;
-  int i;
 
   /* As which application were we invoked? */
   opt.app = find_app(program_invocation_short_name);
@@ -476,40 +516,12 @@ int main(int argc, char *argv[]) {
       goto finish;
   }
 
-  if (set(OPT_SETUIDGID) && opt.users_groups.user.resolved) {
-    /* You do this backwards: supplemental groups first */
-    gid_t *groups = malloc(sizeof(gid_t) * opt.users_groups.num_supplemental);
-
-    if (opt.caps_op != CAP_OP_NONE) {
-      /* Postpone the loss of capabilities until after the user switch
-       * and drop them when ready. */
-      rc = prctl(PR_SET_KEEPCAPS, 1);
-    }
-
-    if (!groups) goto finish;
-    for (i = 0; i < opt.users_groups.num_supplemental; i++)
-      groups[i] = opt.users_groups.supplemental[i].gid;
-    rc = (setgroups(i, groups) == -1 ? errno : 0);
-    free(groups);
-    if (rc) {
-      perror("setgroups");
+  /* Iff using a user namespace, drop the user first */
+  if (set(OPT_SETUIDGID) &&
+      opt.new_ns & CLONE_NEWUSER &&
+      opt.users_groups.user.resolved &&
+      !drop_user(uid, gid))
       goto finish;
-    }
-
-    /* Then main group */
-    rc = setresgid(gid, gid, gid);
-    if (rc) {
-      perror("setresgid");
-      goto finish;
-    }
-
-    /* Then the actual user */
-    rc = setresuid(uid, uid, uid);
-    if (rc) {
-      perror("setresgid");
-      goto finish;
-    }
-  }
 
   if (opt.new_ns) {
     rc = unshare(opt.new_ns);
@@ -662,6 +674,12 @@ int main(int argc, char *argv[]) {
   if (set(OPT_RO_ETC) &&
       (remount_ro("/etc") == -1))
     goto finish;
+
+  if (set(OPT_SETUIDGID) &&
+      (opt.new_ns & CLONE_NEWUSER) == 0 &&
+      opt.users_groups.user.resolved &&
+      !drop_user(uid, gid))
+      goto finish;
 
   if (opt.caps_op != CAP_OP_NONE)
     if (!drop_capabilities())
