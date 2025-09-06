@@ -896,6 +896,7 @@ int options_parse(int argc, char *argv[]) {
          optdef++);
     assert(optdef);
 
+    enable(optdef->option);
     handle_option(&compat, optdef,
                   optdef->has_arg == no_argument ? NULL : argv[optind++]);
   }
